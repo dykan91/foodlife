@@ -1,0 +1,114 @@
+.option-tooltip {
+	background: #FFF !important;
+	color: #333 !important;
+	border: 1px solid rgba(0,0,0,.175) !important;
+	box-shadow: 0 6px 12px rgba(0,0,0,.175) !important;
+}
+.option-tooltip img{
+	margin-top: 5px !important;
+}
+.options-category  .select-quantity {
+	margin-bottom: 10px;
+}
+.select-quantity button{
+	display: block;
+	padding-top: 0px;
+	padding-bottom: 1px;
+	height: 17px !important;
+}
+.select-quantity i {
+	font-size: 9px;
+}
+.select-quantity .input-group-btn .btn {
+	margin:0 -1px 0 0;
+	line-height: 14px;
+	border-right: none;
+	border-color: #ccc;
+}
+.select-quantity .input-group-btn .btn:first-child {
+	border-radius: 4px 0 0 0;
+}
+.select-quantity .input-group-btn .btn:last-child {
+	border-radius: 0 0 0 4px;
+}
+.options-category .checkbox-inline, .options-category .radio-inline, #product .checkbox-inline, #product .radio-inline {
+	margin-left: 0px !important;
+	padding-left: 0px !important;
+}
+.options-category .checkbox-inline input, .options-category .radio-inline input, #product .checkbox-inline input, #product .radio-inline input {
+	display:none;
+}
+
+.options-category .checkbox-inline label, .options-category .radio-inline label, #product .checkbox-inline label, #product .radio-inline label {
+	cursor:pointer !important;
+}
+
+/* Text */
+
+.options-category .checkbox-inline input + span, .options-category .radio-inline input + span, #product .checkbox-inline input + span, #product .radio-inline input + span {
+	padding: 1px 2px;
+	color: #777;
+    background-color: #e7e7e7;
+    background-image: linear-gradient(to bottom, #eeeeee, #dddddd);
+    background-repeat: repeat-x;
+	border: 1px solid #ccc;
+    border-radius: 2px;
+	display: inline-block;
+	min-width: 24px;
+	text-align: center;
+}
+.options-category .checkbox-inline input:checked + span, .options-category .radio-inline input:checked + span, #product .checkbox-inline input:checked + span, #product .radio-inline input:checked + span {
+	color: #fff;
+    background-color: #037553;;
+    background-image: linear-gradient(to bottom, #037553, #037553);
+    background-repeat: repeat-x;
+    border: 1px solid #037553;;
+}
+.options-category .checkbox-inline input[disabled] + span, .options-category .radio-inline input[disabled] + span, #product .checkbox-inline input[disabled] + span, #product .radio-inline input[disabled] + span {
+	cursor: default;
+    background-color: rgba(0, 0, 0, 0);
+	background-image: none;
+	border: 1px solid #ddd;
+}
+
+/* Image */
+
+.options-category .form-group input + img, .options-category .form-group input + img, #product .form-group input + img, #product .form-group input + img {
+	padding: 2px;
+	cursor:pointer;
+	border: 1px solid #ccc;
+    border-radius: 2px;
+	display: inline-block;
+}
+.options-category .checkbox-inline input:checked + img, .options-category .radio-inline input:checked + img, #product .checkbox-inline input:checked + img, #product .radio-inline input:checked + img {
+    border: 1px solid #229ac8;
+}
+.options-category .checkbox-inline input[disabled] + img, .options-category .radio-inline input[disabled] + img, #product .checkbox-inline input[disabled] + img, #product .radio-inline input[disabled] + img {
+	cursor: default;
+	border: 1px solid #ddd;
+}
+
+/* Popup */
+
+.options-category .img-option-thumbnail:hover + div.img-option-popup, #product .img-option-thumbnail:hover + div.img-option-popup {
+	display: block;
+}
+.options-category .img-option-popup, .options-category .img-option-popup, #product .img-option-popup, #product .img-option-popup {
+	padding: 2px;
+	cursor:pointer;
+	border: 1px solid #ccc;
+    border-radius: 2px;
+	display: none;
+	background: #FFF;
+	position: absolute;
+	z-index: 3;
+}
+
+/* Price */
+
+.option-old-price {
+	text-decoration: line-through;
+}
+.option-new-price {
+	font-weight: bold;
+}

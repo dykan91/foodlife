@@ -1,0 +1,1492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<name>Options Category</name>
+	<code>options_category.ocmod</code>
+	<author>http://seregin-pro.ru/</author>
+	<version>3.0.3</version>
+	<link>http://seregin-pro.ru/</link>
+	
+	<!-- 3.0.0.0 - 3.0.2.0 -->
+	
+	<!-- system -->
+
+	<file path="system/library/cart/cart.php">
+		<operation>
+			<search><![CDATA[
+				public function getProducts
+			]]></search>
+			<add position="before"><![CDATA[
+				public function getProductDiscount($product_id, $quantity) {
+					$product_discount_query = $this->db->query("SELECT price FROM " . DB_PREFIX . "product_discount WHERE product_id = '" . (int)$product_id . "' AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND quantity <= '" . (int)$quantity . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY quantity DESC, priority ASC, price ASC LIMIT 1");
+					
+					return $product_discount_query;
+				}
+				
+				public function getProductSpecial($product_id) {
+					$product_special_query = $this->db->query("SELECT price FROM " . DB_PREFIX . "product_special WHERE product_id = '" . (int)$product_id . "' AND customer_group_id = '" . (int)$this->config->get('config_customer_group_id') . "' AND ((date_start = '0000-00-00' OR date_start < NOW()) AND (date_end = '0000-00-00' OR date_end > NOW())) ORDER BY priority ASC, price ASC LIMIT 1");
+					
+					return $product_special_query;
+				}
+				
+				public function getOptionPricePercent($old_price, $price, $option_price, $price_prefix) {
+					if ($price_prefix == '-' || $price_prefix == '/') {
+						$option_price = $option_price + ($option_price / 100) * ($old_price - $price) / ($old_price / 100);
+					} else {
+						$option_price = $option_price - ($option_price / 100) * ($old_price - $price) / ($old_price / 100);
+					}
+					
+					return $option_price;
+				}
+				
+				public function getOptionSpecial($option_value, $product) {
+					if ((float)$product['special'] && $this->config->get('module_options_category_option_special')) {
+						return $this->getOptionPricePercent($product['price'], $product['special'], $option_value['price'], $option_value['price_prefix']);
+					} else {
+						return $option_value['price'];
+					}
+				}
+				
+				public function getPrices($product_id, $price, $quantity) {
+					
+					$special = false;
+					
+					$product_special = $this->getProductSpecial($product_id);
+					
+					if ($product_special->num_rows) {
+						$special = $product_special->row['price'];
+					}
+					
+					if ((float)$special) {
+						$quantity = 1;
+					}
+				
+					$product_discount = $this->getProductDiscount($product_id, $quantity);
+					
+					if ($product_discount->num_rows) {
+						$price = $product_discount->row['price'];
+					}
+					
+					return array(
+						'price'   => $price,
+						'special' => $special
+					);
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$option_data = array();
+			]]></search>
+			<add position="after"><![CDATA[
+				$prices = array();
+				$prices = $this->getPrices($product_query->row['product_id'], $product_query->row['price'], $cart['quantity']);
+				$result_price = (float)$prices['special'] ? $prices['special'] : $prices['price'];
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				if ($option_value_query->row['points_prefix'] == '+'
+			]]></search>
+			<add position="before"><![CDATA[
+				elseif ($option_value_query->row['price_prefix'] == '=') {
+					if ($this->config->get('module_options_category_option_special') && (float)$prices['special']) {
+						$option_price = $this->getOptionPricePercent($prices['price'], $prices['special'], $option_value_query->row['price'], '=') - $prices['special'];
+					} else {
+						$option_price = $option_value_query->row['price'] - $result_price;
+					}
+				} elseif ($option_value_query->row['price_prefix'] == '*') {
+					if ($this->config->get('module_options_category_option_special') && (float)$prices['special']) {
+						$option_price = ($this->getOptionPricePercent($prices['price'], $prices['special'], $option_value_query->row['price'], '*') * ($prices['special'] + $option_price)) - $prices['special'];
+					} else {
+						$option_price = ($option_value_query->row['price'] * ($result_price + $option_price)) - $result_price;
+					}
+				} elseif ($option_value_query->row['price_prefix'] == '/') {
+					if ($this->config->get('module_options_category_option_special') && (float)$prices['special']) {
+						$option_price = ($prices['special'] + $option_price) / $this->getOptionPricePercent($prices['price'], $prices['special'], $option_value_query->row['price'], '/') - $prices['special'];
+					} else {
+						$option_price = ($result_price + $option_price) / $option_value_query->row['price'] - $result_price;
+					}
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$option_price += $option_value_query->row['price'];
+			]]></search>
+			<add position="replace"><![CDATA[
+				if ($this->config->get('module_options_category_option_special') && (float)$prices['special']) {
+					$option_price += $this->getOptionPricePercent($prices['price'], $prices['special'], $option_value_query->row['price'], '+');
+				} else {
+					$option_price += $option_value_query->row['price'];
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$option_price -= $option_value_query->row['price'];
+			]]></search>
+			<add position="replace"><![CDATA[
+				if ($this->config->get('module_options_category_option_special') && (float)$prices['special']) {
+					$option_price -= $this->getOptionPricePercent($prices['price'], $prices['special'], $option_value_query->row['price'], '-');
+				} else {
+					$option_price -= $option_value_query->row['price'];
+				}
+			]]></add>
+		</operation>
+	</file>
+	
+	<!-- controller -->
+	
+	<file path="admin/controller/catalog/product.php">
+		<operation>
+			<search><![CDATA[getForm() {]]></search>
+			<add position="after"><![CDATA[
+				$this->load->language('catalog/options_category');
+				$data['module_options_category_option_show'] = $this->config->get('module_options_category_option_show');
+				$data['module_options_category_option_value_show'] = $this->config->get('module_options_category_option_value_show');
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$data['product_options'][] = array(
+			]]></search>
+			<add position="after"><![CDATA[
+				'option_status' => $product_option['option_status'],
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$product_option_value['quantity'],
+			]]></search>
+			<add position="after"><![CDATA[
+				'sku'                => $product_option_value['sku'],
+				'option_status'      => $product_option_value['option_status'],
+			]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/checkout/cart.php">
+		<operation>
+			<search><![CDATA[$product_info = $this->model_catalog_product->getProduct($product_id);]]></search>
+			<add position="before"><![CDATA[
+				if (isset($this->request->post['module_id'])) {
+					$module_id = (int)$this->request->post['module_id'];
+				} else {
+					$module_id = '';
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[$this->request->post['option']]]></search>
+			<add position="replace"><![CDATA[$this->request->post['option' . $module_id]]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/product/product.php">
+		<operation>
+			<search index="0"><![CDATA[
+				$this->load->model('catalog/product');
+			]]></search>
+			<add position="after"><![CDATA[
+				$this->load->language('extension/module/options_category');
+				$this->load->model('extension/module/options_category');
+	
+				$data['option_setting'] = $this->model_extension_module_options_category->getOptionSetting();
+				$this->model_extension_module_options_category->getOptionScript();
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[$this->model_catalog_product->getProductOptions($this->request->get['product_id'])]]></search>
+			<add position="replace"><![CDATA[$options]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$data['options'] = array();
+			]]></search>
+			<add position="before"><![CDATA[
+				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+					$data['price_calc'] = $this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$data['price_calc'] = false;
+				}
+				
+				if ((float)$product_info['special']) {
+					$data['special_calc'] = $this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$data['special_calc'] = false;
+				}
+				
+				if ($this->config->get('config_tax')) {
+					$data['tax_calc'] = (float)$product_info['special'] ? $product_info['special'] : $product_info['price'];
+				} else {
+					$data['tax_calc'] = false;
+				}
+				
+				if ($this->config->get('module_options_category_apply_product')) {
+					$options = $this->model_extension_module_options_category->getProductOptions($this->request->get['product_id']);
+				} else {
+					$options = $this->model_catalog_product->getProductOptions($this->request->get['product_id']);
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$product_option_value_data = array();
+			]]></search>
+			<add position="after"><![CDATA[
+				$check_option_stop = false;
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[!$option_value['subtract'] || ]]></search>
+			<add position="before"><![CDATA[
+				$price_calc = false;
+				$price = false;
+				$special_no_tax = false;
+				$special_calc = false;
+				$special = false;
+				$tax_calc = false;
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[!$option_value['subtract'] || ]]></search>
+			<add position="replace"><![CDATA[$this->config->get('module_options_category_show_no_stock') || !$option_value['subtract'] || ]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$price = $this->currency->format($this->tax->calculate($option_value['price'], $product_info['tax_class_id'], $this->config->get('config_tax') ? 'P' : false), $this->session->data['currency']);
+			]]></search>
+			<add position="replace"><![CDATA[
+				if ($option_value['price_prefix'] == '+' || $option_value['price_prefix'] == '-' || $option_value['price_prefix'] == '=') {
+							
+					if ($option_value['price_prefix'] == '=') {
+						$option_tax = $this->config->get('config_tax');
+					} else {
+						$option_tax = $this->config->get('config_tax') ? 'P' : false;
+					}
+					
+					$price_calc = $this->tax->calculate($option_value['price'], $product_info['tax_class_id'], $option_tax);
+					
+					if ($this->config->get('module_options_category_show_price')) {
+						$price = $this->currency->format($price_calc, $this->session->data['currency']);
+					}
+					
+					if ($this->config->get('module_options_category_option_special') && (float)$product_info['special']) {
+						$special_no_tax = $this->cart->getOptionSpecial($option_value, $product_info);
+						$special_calc = $this->tax->calculate($special_no_tax, $product_info['tax_class_id'], $option_tax);
+						
+						if ($this->config->get('module_options_category_show_price')) {
+							$special = $this->currency->format($special_calc, $this->session->data['currency']);
+						}
+					}
+				} else {
+					$price_calc = $option_value['price'];
+					
+					if ($this->config->get('module_options_category_show_price')) {
+						$price = (float)$option_value['price'];
+					}
+					
+					if ($this->config->get('module_options_category_option_special') && (float)$product_info['special']) {
+						$special_no_tax = $this->cart->getOptionSpecial($option_value, $product_info);
+						$special_calc = $special_no_tax;
+						
+						if ($this->config->get('module_options_category_show_price')) {
+							$special = (float)$special_calc;
+						}
+					}
+				}
+				
+				if ($this->config->get('config_tax')) {
+					$tax_calc = (float)$special_no_tax ? $special_no_tax : $option_value['price'];
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$product_option_value_data[] = array(]]></search>
+			<add position="before"><![CDATA[	
+				// Изображение
+				if ($this->config->get('module_options_category_image')) {
+					$option_value_image = $this->model_tool_image->resize($option_value['image'], (int)$this->config->get('module_options_category_image_width'), (int)$this->config->get('module_options_category_image_height'));
+				} else {
+					$option_value_image = '';
+				}
+				
+				// Увеличенное изображение
+				if ($this->config->get('module_options_category_popup')) {
+					$option_value_popup = $this->model_tool_image->resize($option_value['image'], (int)$this->config->get('module_options_category_popup_width'), (int)$this->config->get('module_options_category_popup_height'));
+				} else {
+					$option_value_popup = '';
+				}
+				
+				// Префикс
+				$price_prefix_calc = $option_value['price_prefix'];
+				
+				if ($option_value['price_prefix'] == '*') {
+					$option_value['price_prefix'] = '&#215;';
+				} elseif ($option_value['price_prefix'] == '/') {
+					$option_value['price_prefix'] = '&#247;';
+				} elseif ($option_value['price_prefix'] == '=') {
+					$option_value['price_prefix'] = '';
+				}
+				
+				// Отключение опции при 0 запасе
+				if ($this->config->get('module_options_category_no_stock_disabled') && ($option_value['quantity'] == 0)) {
+					$option_no_stock_disabled = ' disabled="disabled"';
+				} else {
+					$option_no_stock_disabled = '';
+				}
+
+				// Автовыбор первой опции
+				if ($this->config->get('module_options_category_autoselect') && !$option_no_stock_disabled && !$check_option_stop) {
+					$autoselect = true;
+					$check_option_stop = true;
+				} else {
+					$autoselect = false;
+				}
+				
+				// Количество
+				if ($this->config->get('module_options_category_show_quantity')) {
+					$quantity = $option_value['quantity'] ? $option_value['quantity'] : $this->language->get('text_option_out_stock');
+				} else {
+					$quantity = '';
+				}
+				
+				// Артикул
+				if ($this->config->get('module_options_category_sku')) {
+					$sku = $option_value['sku'] ? $option_value['sku'] : '';
+				} else {
+					$sku = '';
+				}
+				
+				// Вес
+				if ($this->config->get('module_options_category_weight') && (float)$option_value['weight']) {
+					$weight = $this->weight->format($option_value['weight'], $this->config->get('config_weight_class_id'), $this->language->get('decimal_point'), $this->language->get('thousand_point'));
+				} else {
+					$weight = '';
+				}
+				
+				// баллы
+				if ($this->config->get('module_options_category_points')) {
+					$points = $option_value['points'] ? $option_value['points'] : '';
+				} else {
+					$points = '';
+				}
+			]]></add>
+		</operation>
+		<operation error="skip">
+			<search><![CDATA[$this->model_tool_image->resize($option_value['image'], 50, 50)]]></search>
+			<add position="replace"><![CDATA[$option_value_image]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$product_option_value_data[] = array(
+			]]></search>
+			<add position="after"><![CDATA[	
+				'popup'                   => $option_value_popup,
+				'special'                 => $special,
+				'quantity'                => $quantity,
+				'sku'       		  	  => $sku,
+				'no_stock_disabled'       => $option_no_stock_disabled,
+				'autoselect'       		  => $autoselect,
+				'points'                  => $points,
+				'points_prefix'           => $option_value['points_prefix'],
+				'weight'                  => $weight,
+				'weight_prefix'           => $option_value['weight_prefix'],
+				'price_calc'              => $price_calc,
+				'special_calc'            => $special_calc,
+				'tax_calc'          	  => $tax_calc,
+				'price_prefix_calc'       => $price_prefix_calc,
+				'points_calc'             => $option_value['points'],
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="before"><![CDATA[
+				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+					$price_calc = $this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$price_calc = false;
+				}
+				
+				if ((float)$result['special']) {
+					$special_calc = $this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$special_calc = false;
+				}
+				
+				if ($this->config->get('config_tax')) {
+					$tax_calc = (float)$result['special'] ? $result['special'] : $result['price'];
+				} else {
+					$tax_calc = false;
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="after"><![CDATA[
+				'options_category' => $this->model_extension_module_options_category->getOptions($result),
+				'minimum'          => $result['minimum'],
+				'price_calc'       => $price_calc,
+				'special_calc'     => $special_calc,
+				'tax_calc'         => $tax_calc,
+			]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/extension/module/featured.php">
+		<operation>
+			<search index="0"><![CDATA[
+				$this->load->model('catalog/product');
+			]]></search>
+			<add position="after"><![CDATA[
+				$this->load->language('extension/module/options_category');
+				$this->load->model('extension/module/options_category');
+	
+				$data['option_setting'] = $this->model_extension_module_options_category->getOptionSetting();
+				$this->model_extension_module_options_category->getOptionScript();
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="before"><![CDATA[
+				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+					$price_calc = $this->tax->calculate($product_info['price'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$price_calc = false;
+				}
+				
+				if ((float)$product_info['special']) {
+					$special_calc = $this->tax->calculate($product_info['special'], $product_info['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$special_calc = false;
+				}
+				
+				if ($this->config->get('config_tax')) {
+					$tax_calc = (float)$product_info['special'] ? $product_info['special'] : $product_info['price'];
+				} else {
+					$tax_calc = false;
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="after"><![CDATA[
+				'options_category' => $this->model_extension_module_options_category->getOptions($product_info),
+				'minimum'          => $product_info['minimum'],
+				'price_calc'       => $price_calc,
+				'special_calc'     => $special_calc,
+				'tax_calc'         => $tax_calc,
+			]]></add>
+		</operation>
+	</file>
+	<file path="catalog/controller/extension/module/{bestseller.php,latest.php,special.php,alsobuy.php}|catalog/controller/product/{category.php,manufacturer.php,search.php,special.php}">
+		<operation>
+			<search index="0"><![CDATA[
+				$this->load->model('catalog/product');
+			]]></search>
+			<add position="after"><![CDATA[
+				$this->load->language('extension/module/options_category');
+				$this->load->model('extension/module/options_category');
+	
+				$data['option_setting'] = $this->model_extension_module_options_category->getOptionSetting();
+				$this->model_extension_module_options_category->getOptionScript();
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="before"><![CDATA[
+				if ($this->customer->isLogged() || !$this->config->get('config_customer_price')) {
+					$price_calc = $this->tax->calculate($result['price'], $result['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$price_calc = false;
+				}
+				
+				if ((float)$result['special']) {
+					$special_calc = $this->tax->calculate($result['special'], $result['tax_class_id'], $this->config->get('config_tax'));
+				} else {
+					$special_calc = false;
+				}
+				
+				if ($this->config->get('config_tax')) {
+					$tax_calc = (float)$result['special'] ? $result['special'] : $result['price'];
+				} else {
+					$tax_calc = false;
+				}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				products'][] = array(
+			]]></search>
+			<add position="after"><![CDATA[
+				'options_category' => $this->model_extension_module_options_category->getOptions($result),
+				'minimum'          => $result['minimum'],
+				'price_calc'       => $price_calc,
+				'special_calc'     => $special_calc,
+				'tax_calc'         => $tax_calc,
+			]]></add>
+		</operation>
+	</file>
+	
+	<!-- view -->
+	
+	<file path="catalog/view/theme/*/template/product/product.twig">
+		<operation>
+			<search><![CDATA[
+				{% if option.type == 'select' %}
+			]]></search>
+			<add position="before"><![CDATA[
+				{#
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				{% if option.type == 'text' %}
+			]]></search>
+			<add position="before"><![CDATA[
+				#}
+				{% if option.type == 'select' %}
+				<div class="form-group{% if option.required %} required {% endif %}">
+				  <label class="control-label" for="input-option{{ option.product_option_id }}">{{ option.name }}</label>
+				  <select name="option[{{ option.product_option_id }}]" id="input-option{{ option.product_option_id }}" class="form-control">
+					<option value="">{{ text_select }}</option>
+					{% for option_value in option.product_option_value %}
+					<option{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %}{% if option_value.points_calc %} data-points-prefix="{{ option_value.points_prefix }}" data-points="{{ option_value.points_calc }}"{% endif %} value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} selected="selected" {% endif %}{{ option_value.no_stock_disabled }}>{{ option_value.name }}{% if option_value.special %}, {{ option_value.price_prefix }}{{ option_value.special }}{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}</option>
+					{% endfor %}
+				  </select>
+				</div>
+				{% endif %}
+				{% if option.type == 'radio' or option.type == 'image' %}
+				<div class="form-group{% if option.required %} required {% endif %}">
+				  <label class="control-label">{{ option.name }}</label>
+				  <div id="input-option{{ option.product_option_id }}">
+					{% for option_value in option.product_option_value %}
+					{% if option_setting.compact %}
+					<div class="radio-inline">
+					  <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+					  {% if option_value.popup %}
+					  <tr>
+						<td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+				      </tr>
+					  {% endif %}
+					  {% if option_value.image %}
+					  <tr>
+						<td class='text-left'>{{ text_name }}</td>
+						<td class='text-right'>{{ option_value.name }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.price or option_value.special %}
+					  <tr>
+						<td class='text-left'>{{ text_price }}</td>
+						<td class='text-right'>
+						  {% if option_value.special %}
+						  <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+						  <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+						  {% else %}
+						  <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+						  {% endif %}
+						</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.quantity %}
+					  <tr>
+						<td class='text-left'>{{ text_quantity }}</td>
+						<td class='text-right'>{{ option_value.quantity }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.sku %}
+					  <tr>
+				        <td class='text-left'>{{ text_sku }}</td>
+						<td class='text-right'>{{ option_value.sku }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.points %}
+					  <tr>
+						<td class='text-left'>{{ text_points }}</td>
+						<td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.weight %}
+					  <tr>
+						<td class='text-left'>{{ text_weight }}</td>
+						<td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+					  </tr>
+					  {% endif %}</table>">
+					    <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %}{% if option_value.points_calc %} data-points-prefix="{{ option_value.points_prefix }}" data-points="{{ option_value.points_calc }}"{% endif %} type="radio" name="option[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+					    {% if option_value.image %}
+					    <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+					    {% else %}
+					    <span>{{ option_value.name }}</span>
+					    {% endif %}
+					  </label>
+					</div>
+					{% else %}
+				    <div class="radio">
+					  <label>
+						<input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %}{% if option_value.points_calc %} data-points-prefix="{{ option_value.points_prefix }}" data-points="{{ option_value.points_calc }}"{% endif %} type="radio" name="option[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+						{% if option_value.image %}
+					    <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+						{% if option_value.popup %}
+					    <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+					    {% endif %}
+					    {% endif %}
+						{{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+				      </label>
+					</div>
+					{% endif %}
+					{% endfor %}
+				  </div>
+				</div>
+				{% endif %}
+				{% if option.type == 'checkbox' %}
+				<div class="form-group{% if option.required %} required {% endif %}">
+				  <label class="control-label">{{ option.name }}</label>
+				  <div id="input-option{{ option.product_option_id }}">
+					{% for option_value in option.product_option_value %}
+					{% if option_setting.compact %}
+					<div class="checkbox-inline">
+					  <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+					  {% if option_value.popup %}
+					  <tr>
+						<td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+				      </tr>
+					  {% endif %}
+					  {% if option_value.image %}
+					  <tr>
+						<td class='text-left'>{{ text_name }}</td>
+						<td class='text-right'>{{ option_value.name }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.price or option_value.special %}
+					  <tr>
+						<td class='text-left'>{{ text_price }}</td>
+						<td class='text-right'>
+						  {% if option_value.special %}
+						  <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+						  <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+						  {% else %}
+						  <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+						  {% endif %}
+						</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.quantity %}
+					  <tr>
+						<td class='text-left'>{{ text_quantity }}</td>
+						<td class='text-right'>{{ option_value.quantity }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.sku %}
+					  <tr>
+				        <td class='text-left'>{{ text_sku }}</td>
+						<td class='text-right'>{{ option_value.sku }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.points %}
+					  <tr>
+						<td class='text-left'>{{ text_points }}</td>
+						<td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+					  </tr>
+					  {% endif %}
+					  {% if option_value.weight %}
+					  <tr>
+						<td class='text-left'>{{ text_weight }}</td>
+						<td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+					  </tr>
+					  {% endif %}</table>">
+					    <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %}{% if option_value.points_calc %} data-points-prefix="{{ option_value.points_prefix }}" data-points="{{ option_value.points_calc }}"{% endif %} type="checkbox" name="option[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+					    {% if option_value.image %}
+					    <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+					    {% else %}
+					    <span>{{ option_value.name }}</span>
+					    {% endif %}
+					  </label>
+					</div>
+					{% else %}
+				    <div class="checkbox">
+					  <label>
+						<input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %}{% if option_value.points_calc %} data-points-prefix="{{ option_value.points_prefix }}" data-points="{{ option_value.points_calc }}"{% endif %} type="checkbox" name="option[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+						{% if option_value.image %}
+					    <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+						{% if option_value.popup %}
+					    <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+					    {% endif %}
+					    {% endif %}
+						{{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+				      </label>
+					</div>
+					{% endif %}
+					{% endfor %}
+				  </div>
+				</div>
+				{% endif %}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[{{ price }}]]></search>
+			<add position="replace"><![CDATA[<span data-price="{{ price_calc }}" class="product-price">{{ price }}</span>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[{{ special }}]]></search>
+			<add position="replace"><![CDATA[<span data-special="{{ special_calc }}" class="product-special">{{ special }}</span>]]></add>
+		</operation>
+		<operation error="skip">
+			<search><![CDATA[{{ tax }}]]></search>
+			<add position="replace"><![CDATA[<span data-tax="{{ tax_calc }}" class="product-tax">{{ tax }}</span>]]></add>
+		</operation>
+		<operation error="skip">
+			<search><![CDATA[{{ points }}]]></search>
+			<add position="replace"><![CDATA[<span data-points="{{ points }}" class="product-points">{{ points }}</span>]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[name="quantity"]]></search>
+			<add position="replace"><![CDATA[data-minimum="{{ minimum }}" name="quantity" onkeyup="updatePrice('');"]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[name="quantity"]]></search>
+			<add position="before"><![CDATA[
+				<div class="input-group select-quantity">
+				  <span class="input-group-btn">
+					<button onclick="updateQuantity('+', '{{ minimum }}', '');" class="btn btn-default" type="button"><i class="fa fa-plus"></i></button>
+					<button onclick="updateQuantity('-', '{{ minimum }}', '');" class="btn btn-default" type="button"><i class="fa fa-minus"></i></button>
+				  </span>
+			]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[name="quantity"]]></search>
+			<add position="after"><![CDATA[</div>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[{{ footer }}]]></search>
+			<add position="before"><![CDATA[
+				<script type="text/javascript">
+					{% if option_setting.autoselect or minimum > 1 %}
+					$(document).ready(function() {
+						updatePrice('');
+					});
+					{% endif %}
+					$('#product input[type=\'radio\'], #product input[type=\'checkbox\'], #product select').on('change', function() {
+						updatePrice('');
+					});
+				</script>
+			]]></add>
+		</operation>
+	</file>
+	<file path="catalog/view/theme/*/template/extension/module/{bestseller.twig,latest.twig,featured.twig,special.twig,alsobuy.twig}|catalog/view/theme/*/template/product/{category.twig,manufacturer_info.twig,search.twig,special.twig,product.twig|catalog/view/theme/*/template/common/{home.twig}">
+		<operation>
+			<search index="0"><![CDATA[<div]]></search>
+			<add position="before"><![CDATA[
+				<input type="hidden" name="price_format" value="" data-value="{{ option_setting.value }}" data-symbol-left="{{ option_setting.symbol_left }}" data-symbol-right="{{ option_setting.symbol_right }}" data-decimals="{{ option_setting.decimals }}" data-decimal-point="{{ option_setting.decimal_point }}" data-thousand-point="{{ option_setting.thousand_point }}" />
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[{{ product.price }}]]></search>
+			<add position="replace"><![CDATA[<span data-price="{{ product.price_calc }}" class="product-price{{ option_setting.id }}{{ product.product_id }}">{{ product.price }}</span>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[{{ product.special }}]]></search>
+			<add position="replace"><![CDATA[<span data-special="{{ product.special_calc }}" class="product-special{{ option_setting.id }}{{ product.product_id }}">{{ product.special }}</span>]]></add>
+		</operation>
+		<operation error="skip">
+			<search><![CDATA[{{ product.tax }}]]></search>
+			<add position="replace"><![CDATA[<span data-tax="{{ product.tax_calc }}" class="product-tax{{ option_setting.id }}{{ product.product_id }}">{{ product.tax }}</span>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				{% if product.price %}
+			]]></search>
+			<add position="before"><![CDATA[
+				<div class="options-category" id="product{{ option_setting.id }}{{ product.product_id }}">
+				  {% for option in product.options_category %}
+				  {% if option.type == 'select' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<select onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control">
+					  <option value="">{{ text_select }}</option>
+					  {% for option_value in option.product_option_value %}
+					  <option{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} selected="selected" {% endif %}{{ option_value.no_stock_disabled }}>{{ option_value.name }}{% if option_value.special %}, {{ option_value.price_prefix }}{{ option_value.special }}{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}</option>
+					  {% endfor %}
+					</select>
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'radio' or option.type == 'image' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+				    <label class="control-label">{{ option.name }}</label>
+				    <div id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">
+					  {% for option_value in option.product_option_value %}
+					  {% if option_setting.compact %}
+					  <div class="radio-inline">
+			            <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+					    {% if option_value.popup %}
+					    <tr>
+						  <td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+				        </tr>
+					    {% endif %}
+					    {% if option_value.image %}
+					      <tr>
+						    <td class='text-left'>{{ text_name }}</td>
+						    <td class='text-right'>{{ option_value.name }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.price or option_value.special %}
+					    <tr>
+						  <td class='text-left'>{{ text_price }}</td>
+						  <td class='text-right'>
+						    {% if option_value.special %}
+						    <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+						    <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+						    {% else %}
+						    <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+						    {% endif %}
+						  </td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.quantity %}
+					    <tr>
+						  <td class='text-left'>{{ text_quantity }}</td>
+						  <td class='text-right'>{{ option_value.quantity }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.sku %}
+					    <tr>
+				          <td class='text-left'>{{ text_sku }}</td>
+						  <td class='text-right'>{{ option_value.sku }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.points %}
+					    <tr>
+						  <td class='text-left'>{{ text_points }}</td>
+						  <td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.weight %}
+					    <tr>
+						  <td class='text-left'>{{ text_weight }}</td>
+						  <td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+					    </tr>
+					    {% endif %}</table>">
+					      <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="radio" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+					      {% if option_value.image %}
+					      <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+					      {% else %}
+					      <span>{{ option_value.name }}</span>
+					      {% endif %}
+					    </label>
+					  </div>
+					  {% else %}
+				      <div class="radio">
+					    <label>
+						  <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="radio" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+						  {% if option_value.image %}
+					      <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+						  {% if option_value.popup %}
+					      <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+					      {% endif %}
+					      {% endif %}
+						  {{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+				        </label>
+					  </div>
+					  {% endif %}
+					  {% endfor %}
+				    </div>
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'checkbox' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+				    <label class="control-label">{{ option.name }}</label>
+				    <div id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">
+					  {% for option_value in option.product_option_value %}
+					  {% if option_setting.compact %}
+					  <div class="checkbox-inline">
+					    <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+					    {% if option_value.popup %}
+					    <tr>
+						  <td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+				        </tr>
+					    {% endif %}
+					    {% if option_value.image %}
+					      <tr>
+						    <td class='text-left'>{{ text_name }}</td>
+						    <td class='text-right'>{{ option_value.name }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.price or option_value.special %}
+					    <tr>
+						  <td class='text-left'>{{ text_price }}</td>
+						  <td class='text-right'>
+						    {% if option_value.special %}
+						    <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+						    <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+						    {% else %}
+						    <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+						    {% endif %}
+						  </td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.quantity %}
+					    <tr>
+						  <td class='text-left'>{{ text_quantity }}</td>
+						  <td class='text-right'>{{ option_value.quantity }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.sku %}
+					    <tr>
+				          <td class='text-left'>{{ text_sku }}</td>
+						  <td class='text-right'>{{ option_value.sku }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.points %}
+					    <tr>
+						  <td class='text-left'>{{ text_points }}</td>
+						  <td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+					    </tr>
+					    {% endif %}
+					    {% if option_value.weight %}
+					    <tr>
+						  <td class='text-left'>{{ text_weight }}</td>
+						  <td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+					    </tr>
+					    {% endif %}</table>">
+					      <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="checkbox" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+					      {% if option_value.image %}
+					      <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+					      {% else %}
+					      <span>{{ option_value.name }}</span>
+					      {% endif %}
+					    </label>
+					  </div>
+					  {% else %}
+				      <div class="checkbox">
+					    <label>
+						  <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="checkbox" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+						  {% if option_value.image %}
+					      <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+						  {% if option_value.popup %}
+					      <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+					      {% endif %}
+					      {% endif %}
+						  {{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+				        </label>
+					  </div>
+					  {% endif %}
+					  {% endfor %}
+				    </div>
+				  </div>
+				  {% endif %}
+				  {% if option_setting.autoselect or product.minimum > 1 %}
+				  <script type="text/javascript">
+					  $(document).ready(function() {
+						  updatePrice('{{ option_setting.id }}{{ product.product_id }}');
+					  });
+				  </script>
+				  {% endif %}
+				  {% if option.type == 'text' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" placeholder="{{ option.name }}" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'textarea' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<textarea name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" rows="5" placeholder="{{ option.name }}" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control">{{ option['value'] }}</textarea>
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'file' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label">{{ option.name }}</label>
+					<button type="button" data-loading-text="{{ text_loading }}" class="btn btn-default btn-block" id="button-upload{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" onclick="uploadOptionFile('{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}');"><i class="fa fa-upload"></i> {{ button_upload }}</button>
+					<input type="hidden" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'date' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<div class="input-group date">
+					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="YYYY-MM-DD" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+					  <span class="input-group-btn">
+					  <button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button>
+					  </span></div>
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'datetime' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<div class="input-group datetime">
+					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="YYYY-MM-DD HH:mm" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+					  <span class="input-group-btn">
+					  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button>
+					  </span></div>
+				  </div>
+				  {% endif %}
+				  {% if option.type == 'time' %}
+				  <div class="form-group{% if option.required %} required {% endif %}">
+					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+					<div class="input-group time">
+					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="HH:mm" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+					  <span class="input-group-btn">
+					  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button>
+					  </span></div>
+				  </div>
+				  {% endif %}
+				  {% endfor %}
+				  {% if option_setting['select_quantity'] %}
+					  <div class="input-group select-quantity">
+						<span class="input-group-btn">
+						  <button onclick="updateQuantity('+', '{{ product['minimum'] }}', '{{ option_setting.id }}{{ product.product_id }}');" class="btn btn-default" type="button"><i class="fa fa-plus"></i></button>
+						  <button onclick="updateQuantity('-', '{{ product['minimum'] }}', '{{ option_setting.id }}{{ product.product_id }}');" class="btn btn-default" type="button"><i class="fa fa-minus"></i></button>
+						</span>
+						<input data-minimum="{{ product['minimum'] }}" onkeyup="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" class="form-control input-quantity{{ option_setting.id }}{{ product.product_id }}" type="text" name="quantity" value="{{ product['minimum'] }}"/>
+					  </div>
+				  {% else %}
+				  <input data-minimum="{{ product['minimum'] }}" type="hidden" name="quantity" value="{{ product['minimum'] }}" />
+				  {% endif %}
+				  <input type="hidden" name="product_id" value="{{ product.product_id }}" />
+				  <input type="hidden" name="module_id" value="{{ option_setting.id }}{{ product.product_id }}" />
+				</div>
+			]]></add>
+		</operation>
+		<operation error="skip">
+			<search><![CDATA[cart.add(']]></search>
+			<add position="replace"><![CDATA[addCartOption('{{ option_setting.id }}]]></add>
+		</operation>
+	</file>
+	<file path="admin/view/template/catalog/product_form.twig">
+		<operation>
+			<search><![CDATA[{% if product_option.type == 'text' %}]]></search>
+			<add position="before"><![CDATA[
+				{% if module_options_category_option_show == '2' %}
+				<div class="form-group">
+				  <label class="col-sm-2 control-label" for="input-option-status{{ option_row }}">{{ entry_status }}</label>
+				  <div class="col-sm-10">
+				    <select name="product_option[{{ option_row }}][option_status]" id="input-option-status{{ option_row }}" class="form-control">
+					  {% if product_option['option_status'] == 2 %}
+					  <option value="2" selected="selected">{{ text_status_default }}</option>
+					  <option value="1">{{ text_enabled }}</option>
+					  <option value="0">{{ text_disabled }}</option>
+					  {% elseif product_option['option_status'] == 1 %}
+					  <option value="2">{{ text_status_default }}</option>
+					  <option value="1" selected="selected">{{ text_enabled }}</option>
+					  <option value="0">{{ text_disabled }}</option>
+					  {% else %}
+					  <option value="2">{{ text_status_default }}</option>
+					  <option value="1">{{ text_enabled }}</option>
+					  <option value="0" selected="selected">{{ text_disabled }}</option>
+					  {% endif %}
+				    </select>
+				  </div>
+			    </div>
+				{% endif %}
+			]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[<td colspan="6"></td>]]></search>
+			<add position="replace"><![CDATA[<td colspan="{% if module_options_category_option_value_show == '2' %}8{% else %}7{% endif %}"></td>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[<td colspan="6"></td>';]]></search>
+			<add position="replace"><![CDATA[<td colspan="{% if module_options_category_option_value_show == '2' %}8{% else %}7{% endif %}"></td>';]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[value="-">-</option>]]></search>
+			<add position="after" offset="1"><![CDATA[
+				{% if product_option_value.price_prefix == '=' %}
+                <option value="=" selected="selected">=</option>
+                {% else %}
+                <option value="=">=</option>
+                {% endif %}
+				{% if product_option_value.price_prefix == '*' %}
+                <option value="*" selected="selected">*</option>
+                {% else %}
+                <option value="*">*</option>
+                {% endif %}
+				{% if product_option_value.price_prefix == '/' %}
+                <option value="/" selected="selected">/</option>
+                {% else %}
+                <option value="/">/</option>
+                {% endif %}
+			]]></add>
+		</operation>
+		<operation>
+			<search index="0"><![CDATA[value="-">-</option>';]]></search>
+			<add position="after"><![CDATA[
+				html += '    <option value="=">=</option>';
+				html += '    <option value="*">*</option>';
+				html += '    <option value="/">/</option>';
+			]]></add>
+		</operation>
+		<operation>
+			<search index="0,2"><![CDATA[<td class="text-right">{{ entry_quantity }}</td>]]></search>
+			<add position="replace"><![CDATA[<td class="text-right">{{ entry_sku }}</td>{% if module_options_category_option_value_show == '2' %}<td class="text-center">{{ entry_status }}</td>{% endif %}<td class="text-right">{{ entry_quantity }}</td>]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[value="{{ product_option_value.quantity }}"]]></search>
+			<add position="before"><![CDATA[
+				<td class="text-right"><input type="text" name="product_option[{{ option_row }}][product_option_value][{{ option_value_row }}][sku]" value="{{ product_option_value.sku }}" placeholder="{{ entry_sku }}" class="form-control" /></td>
+				{% if module_options_category_option_value_show == '2' %}
+				<td class="text-center">
+				  <select name="product_option[{{ option_row }}][product_option_value][{{ option_value_row }}][option_status]" class="form-control">
+				    {% if product_option_value['option_status'] == 2 %}
+				    <option value="2" selected="selected">{{ text_status_default }}</option>
+				    <option value="1">{{ text_enabled }}</option>
+				    <option value="0">{{ text_disabled }}</option>
+				    {% elseif product_option_value['option_status'] == 1 %}
+				    <option value="2">{{ text_status_default }}</option>
+				    <option value="1" selected="selected">{{ text_enabled }}</option>
+				    <option value="0">{{ text_disabled }}</option>
+				    {% else %}
+				    <option value="2">{{ text_status_default }}</option>
+				    <option value="1">{{ text_enabled }}</option>
+				    <option value="0" selected="selected">{{ text_disabled }}</option>
+				    {% endif %}
+				  </select>
+				</td>
+				{% endif %}
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[html += '  <td class="text-right"><input type="text" name="product_option[' + option_row + '][product_option_value][' + option_value_row + '][quantity]"]]></search>
+			<add position="before"><![CDATA[
+				html += '  <td class="text-right"><input type="text" name="product_option[' + option_row + '][product_option_value][' + option_value_row + '][sku]" value="" placeholder="{{ entry_sku }}" class="form-control" /></td>';
+				{% if module_options_category_option_value_show == '2' %}
+				html += '  <td class="text-right"><select name="product_option[' + option_row + '][product_option_value][' + option_value_row + '][option_status]" class="form-control"><option value="2">{{ text_status_default }}</option><option value="1">{{ text_enabled }}</option><option value="0">{{ text_disabled }}</option></select></td>';
+				{% endif %}
+			]]></add>
+		</operation>
+	</file>
+	
+	<!-- model -->
+	
+	<file path="catalog/model/catalog/product.php">
+		<operation>
+			<search><![CDATA[
+				$product_option_value['quantity'],
+			]]></search>
+			<add position="after"><![CDATA[
+				'sku'                => $product_option_value['sku'],
+				'option_status'      => $product_option_value['option_status'],
+				'points'             => $product_option_value['points'],
+				'points_prefix'      => $product_option_value['points_prefix'],
+			]]></add>
+		</operation>
+	</file>
+	<file path="admin/model/catalog/product.php">
+		<operation>
+			<search><![CDATA[
+				$product_option_data[] = array(
+			]]></search>
+			<add position="after"><![CDATA[
+				'option_status'                 => $product_option['option_status'],
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[required = '" . (int)$product_option['required'] . "'"]]></search>
+			<add position="replace"><![CDATA[required = '" . (int)$product_option['required'] . "'" . (isset($product_option['option_status']) ? ", option_status = '" . (int)$product_option['option_status'] . "'" : "")]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[
+				$product_option_value['quantity'],
+			]]></search>
+			<add position="after"><![CDATA[
+				'sku'                => $product_option_value['sku'],
+				'option_status'      => $product_option_value['option_status'],
+			]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[pov.quantity,]]></search>
+			<add position="replace"><![CDATA[pov.quantity, pov.sku, pov.option_status,]]></add>
+		</operation>
+		<operation>
+			<search><![CDATA[quantity = '" . (int)$product_option_value['quantity'] . "',]]></search>
+			<add position="replace"><![CDATA[quantity = '" . (int)$product_option_value['quantity'] . "'," . (isset($product_option_value['option_status']) ? " option_status = '" . (int)$product_option_value['option_status'] . "'," : "") . " sku = '" . $this->db->escape($product_option_value['sku']) . "',]]></add>
+		</operation>
+	</file>
+	<file path="catalog/view/theme/*/template/common/home.twig">
+    		<operation>
+    			<search index="0"><![CDATA[<div]]></search>
+    			<add position="before"><![CDATA[
+    				<input type="hidden" name="price_format" value="" data-value="{{ option_setting.value }}" data-symbol-left="{{ option_setting.symbol_left }}" data-symbol-right="{{ option_setting.symbol_right }}" data-decimals="{{ option_setting.decimals }}" data-decimal-point="{{ option_setting.decimal_point }}" data-thousand-point="{{ option_setting.thousand_point }}" />
+    			]]></add>
+    		</operation>
+    		<operation>
+    			<search><![CDATA[{{ product.price }}]]></search>
+    			<add position="replace"><![CDATA[<span data-price="{{ product.price_calc }}" class="product-price{{ option_setting.id }}{{ product.product_id }}">{{ product.price }}</span>]]></add>
+    		</operation>
+    		<operation>
+    			<search><![CDATA[{{ product.special }}]]></search>
+    			<add position="replace"><![CDATA[<span data-special="{{ product.special_calc }}" class="product-special{{ option_setting.id }}{{ product.product_id }}">{{ product.special }}</span>]]></add>
+    		</operation>
+    		<operation error="skip">
+    			<search><![CDATA[{{ product.tax }}]]></search>
+    			<add position="replace"><![CDATA[<span data-tax="{{ product.tax_calc }}" class="product-tax{{ option_setting.id }}{{ product.product_id }}">{{ product.tax }}</span>]]></add>
+    		</operation>
+    		<operation>
+    			<search><![CDATA[
+    				{% if product.price %}
+    			]]></search>
+    			<add position="before"><![CDATA[
+    				<div class="options-category" id="product{{ option_setting.id }}{{ product.product_id }}">
+    				  {% for option in product.options_category %}
+    				  {% if option.type == 'select' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<select onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control">
+    					  <option value="">{{ text_select }}</option>
+    					  {% for option_value in option.product_option_value %}
+    					  <option{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} selected="selected" {% endif %}{{ option_value.no_stock_disabled }}>{{ option_value.name }}{% if option_value.special %}, {{ option_value.price_prefix }}{{ option_value.special }}{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}</option>
+    					  {% endfor %}
+    					</select>
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'radio' or option.type == 'image' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    				    <label class="control-label">{{ option.name }}</label>
+    				    <div id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">
+    					  {% for option_value in option.product_option_value %}
+    					  {% if option_setting.compact %}
+    					  <div class="radio-inline">
+    			            <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+    					    {% if option_value.popup %}
+    					    <tr>
+    						  <td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+    				        </tr>
+    					    {% endif %}
+    					    {% if option_value.image %}
+    					      <tr>
+    						    <td class='text-left'>{{ text_name }}</td>
+    						    <td class='text-right'>{{ option_value.name }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.price or option_value.special %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_price }}</td>
+    						  <td class='text-right'>
+    						    {% if option_value.special %}
+    						    <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+    						    <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+    						    {% else %}
+    						    <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+    						    {% endif %}
+    						  </td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.quantity %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_quantity }}</td>
+    						  <td class='text-right'>{{ option_value.quantity }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.sku %}
+    					    <tr>
+    				          <td class='text-left'>{{ text_sku }}</td>
+    						  <td class='text-right'>{{ option_value.sku }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.points %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_points }}</td>
+    						  <td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.weight %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_weight }}</td>
+    						  <td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+    					    </tr>
+    					    {% endif %}</table>">
+    					      <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="radio" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+    					      {% if option_value.image %}
+    					      <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+    					      {% else %}
+    					      <span>{{ option_value.name }}</span>
+    					      {% endif %}
+    					    </label>
+    					  </div>
+    					  {% else %}
+    				      <div class="radio">
+    					    <label>
+    						  <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="radio" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+    						  {% if option_value.image %}
+    					      <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+    						  {% if option_value.popup %}
+    					      <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+    					      {% endif %}
+    					      {% endif %}
+    						  {{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+    				        </label>
+    					  </div>
+    					  {% endif %}
+    					  {% endfor %}
+    				    </div>
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'checkbox' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    				    <label class="control-label">{{ option.name }}</label>
+    				    <div id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">
+    					  {% for option_value in option.product_option_value %}
+    					  {% if option_setting.compact %}
+    					  <div class="checkbox-inline">
+    					    <label {% if not option_setting.position %}data-placement="bottom"{% endif %}data-container="body" data-html="true" data-toggle="tooltip" data-template="<div class='tooltip' role='tooltip'><div class='tooltip-inner option-tooltip'></div></div>" title="<table class='option-table'>
+    					    {% if option_value.popup %}
+    					    <tr>
+    						  <td colspan='2' class='text-center'><img class='option-thumbnail' src='{{ option_value.popup }}' alt='{{ option_value.name }}'></td>
+    				        </tr>
+    					    {% endif %}
+    					    {% if option_value.image %}
+    					      <tr>
+    						    <td class='text-left'>{{ text_name }}</td>
+    						    <td class='text-right'>{{ option_value.name }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.price or option_value.special %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_price }}</td>
+    						  <td class='text-right'>
+    						    {% if option_value.special %}
+    						    <span class='option-old-price'>{{ option_value.price_prefix }}{{ option_value.price }}</span>
+    						    <span class='option-new-price'>{{ option_value.price_prefix }}{{ option_value.special }}</apan>
+    						    {% else %}
+    						    <span class='option-price'>{{ option_value.price_prefix }}{{ option_value.price }}</apan>
+    						    {% endif %}
+    						  </td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.quantity %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_quantity }}</td>
+    						  <td class='text-right'>{{ option_value.quantity }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.sku %}
+    					    <tr>
+    				          <td class='text-left'>{{ text_sku }}</td>
+    						  <td class='text-right'>{{ option_value.sku }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.points %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_points }}</td>
+    						  <td class='text-right'>{{ option_value.points_prefix }}{{ option_value.points }}</td>
+    					    </tr>
+    					    {% endif %}
+    					    {% if option_value.weight %}
+    					    <tr>
+    						  <td class='text-left'>{{ text_weight }}</td>
+    						  <td class='text-right'>{{ option_value.weight_prefix }}{{ option_value.weight }}</td>
+    					    </tr>
+    					    {% endif %}</table>">
+    					      <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="checkbox" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+    					      {% if option_value.image %}
+    					      <img src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+    					      {% else %}
+    					      <span>{{ option_value.name }}</span>
+    					      {% endif %}
+    					    </label>
+    					  </div>
+    					  {% else %}
+    				      <div class="checkbox">
+    					    <label>
+    						  <input{% if option_value.price_calc %} data-price-prefix="{{ option_value.price_prefix_calc }}" data-price="{{ option_value.price_calc }}"{% if option_value.special_calc %} data-special="{{ option_value.special_calc }}"{% endif %}{% if option_value.tax_calc %} data-tax="{{ option_value.tax_calc }}"{% endif %}{% endif %} onchange="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" type="checkbox" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}][]" value="{{ option_value.product_option_value_id }}"{% if option_value.autoselect %} checked="checked" {% endif %}{{ option_value.no_stock_disabled }}/>
+    						  {% if option_value.image %}
+    					      <img class="img-option-thumbnail" src="{{ option_value.image }}" alt="{{ option_value.name }}"/>
+    						  {% if option_value.popup %}
+    					      <div class="img-option-popup"><img src="{{ option_value.popup }}" alt="{{ option_value.name }}"/></div>
+    					      {% endif %}
+    					      {% endif %}
+    						  {{ option_value.name }}{% if option_value.special %}, <span class="option-old-price">{{ option_value.price_prefix }}{{ option_value.price }}</span> <span class="option-new-price">{{ option_value.price_prefix }}{{ option_value.special }}</span>{% elseif option_value.price %}, {{ option_value.price_prefix }}{{ option_value.price }}{% endif %}{% if option_value.quantity %}, {{ text_quantity }} {{ option_value.quantity }}{% endif %}{% if option_value.sku %}, {{ text_sku }} {{ option_value.sku }}{% endif %}{% if option_value.points %}, {{ text_points }} {{ option_value.points_prefix }}{{ option_value.points }}{% endif %}{% if option_value.weight %}, {{ text_weight }} {{ option_value.weight_prefix }}{{ option_value.weight }}{% endif %}
+    				        </label>
+    					  </div>
+    					  {% endif %}
+    					  {% endfor %}
+    				    </div>
+    				  </div>
+    				  {% endif %}
+    				  {% if option_setting.autoselect or product.minimum > 1 %}
+    				  <script type="text/javascript">
+    					  $(document).ready(function() {
+    						  updatePrice('{{ option_setting.id }}{{ product.product_id }}');
+    					  });
+    				  </script>
+    				  {% endif %}
+    				  {% if option.type == 'text' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" placeholder="{{ option.name }}" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'textarea' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<textarea name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" rows="5" placeholder="{{ option.name }}" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control">{{ option['value'] }}</textarea>
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'file' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label">{{ option.name }}</label>
+    					<button type="button" data-loading-text="{{ text_loading }}" class="btn btn-default btn-block" id="button-upload{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" onclick="uploadOptionFile('{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}');"><i class="fa fa-upload"></i> {{ button_upload }}</button>
+    					<input type="hidden" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'date' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<div class="input-group date">
+    					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="YYYY-MM-DD" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+    					  <span class="input-group-btn">
+    					  <button class="btn btn-default" type="button"><i class="fa fa-calendar"></i></button>
+    					  </span></div>
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'datetime' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<div class="input-group datetime">
+    					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="YYYY-MM-DD HH:mm" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+    					  <span class="input-group-btn">
+    					  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button>
+    					  </span></div>
+    				  </div>
+    				  {% endif %}
+    				  {% if option.type == 'time' %}
+    				  <div class="form-group{% if option.required %} required {% endif %}">
+    					<label class="control-label" for="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}">{{ option.name }}</label>
+    					<div class="input-group time">
+    					  <input type="text" name="option{{ option_setting.id }}{{ product.product_id }}[{{ option.product_option_id }}]" value="{{ option['value'] }}" data-date-format="HH:mm" id="input-option{{ option_setting.id }}{{ product.product_id }}{{ option.product_option_id }}" class="form-control" />
+    					  <span class="input-group-btn">
+    					  <button type="button" class="btn btn-default"><i class="fa fa-calendar"></i></button>
+    					  </span></div>
+    				  </div>
+    				  {% endif %}
+    				  {% endfor %}
+    				  {% if option_setting['select_quantity'] %}
+    					  <div class="input-group select-quantity">
+    						<span class="input-group-btn">
+    						  <button onclick="updateQuantity('+', '{{ product['minimum'] }}', '{{ option_setting.id }}{{ product.product_id }}');" class="btn btn-default" type="button"><i class="fa fa-plus"></i></button>
+    						  <button onclick="updateQuantity('-', '{{ product['minimum'] }}', '{{ option_setting.id }}{{ product.product_id }}');" class="btn btn-default" type="button"><i class="fa fa-minus"></i></button>
+    						</span>
+    						<input data-minimum="{{ product['minimum'] }}" onkeyup="updatePrice('{{ option_setting.id }}{{ product.product_id }}');" class="form-control input-quantity{{ option_setting.id }}{{ product.product_id }}" type="text" name="quantity" value="{{ product['minimum'] }}"/>
+    					  </div>
+    				  {% else %}
+    				  <input data-minimum="{{ product['minimum'] }}" type="hidden" name="quantity" value="{{ product['minimum'] }}" />
+    				  {% endif %}
+    				  <input type="hidden" name="product_id" value="{{ product.product_id }}" />
+    				  <input type="hidden" name="module_id" value="{{ option_setting.id }}{{ product.product_id }}" />
+    				</div>
+    			]]></add>
+    		</operation>
+    		<operation error="skip">
+    			<search><![CDATA[cart.add(']]></search>
+    			<add position="replace"><![CDATA[addCartOption('{{ option_setting.id }}]]></add>
+    		</operation>
+    	</file>
+	
+</modification>

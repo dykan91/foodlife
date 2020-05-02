@@ -1,0 +1,86 @@
+{{ header }}
+<div id="common-home" class="container">
+
+    <div class="catalogMenu">
+        <ul>
+            <li><a href="">
+                    <div>Пицца</div>
+                </a></li>
+            <li><a href="">
+                    <div>Суши</div>
+                </a></li>
+            <li><a href="">
+                    <div>Сеты</div>
+                </a></li>
+            <li><a href="">
+                    <div>Напитки</div>
+                </a></li>
+            <li><a href="">
+                    <div>Добавки</div>
+                </a></li>
+        </ul>
+    </div>
+    {% for category in products_all %}
+        <div class="category_title"> {{ category['name'] }}</div>
+        <div class="row catProduct">
+            {% for product in category.product %}
+
+                <div class="col-sm-3 oneProduct">
+                    <div class="image"><img src="http://dev.ua/image/{{ product.image }}" alt="{{ product.name }}"
+                                            title="{{ product.name }}" class="img-responsive"/></div>
+                    <div class="name">{{ product['name'] }}</div>
+                    <div class="discription">
+                        <div>{{ product['description'] }}</div>
+                    </div>
+                    <div class="price">от {{ product['price'] }}</div>
+                    <a href="#openModal{{ product['product_id'] }}">
+                        <div class="button">Выбрать</div>
+                    </a>
+                    <div id="openModal{{ product['product_id'] }}" class="modal">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <a href="#close" title="Close" class="close">×</a>
+                                <div class="modal-body">
+                                    <div class="modal_img_pizza"><img src="http://dev.ua/image/{{ product.image }}"
+                                                                      alt="{{ product.name }}"
+                                                                      title="{{ product.name }}"
+                                                                      class="img-responsive"/></div>
+                                    <div class="modal_block">
+                                        <div class="name">{{ product['name'] }}</div>
+                                        <div class="discription">
+                                            <div>{{ product['description'] }}</div>
+                                        </div>
+                                        {% if product.price %}
+                                        <div class="price">от {{ product.price }}</div>
+                                        {% endif %}
+                                    </div>
+
+
+                                </div>
+
+
+                        </div>
+
+                    </div>
+                    </div>
+
+                </div>
+
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    {#    <div class="row">{{ column_left }}#}
+    {#        {% if column_left and column_right %}#}
+    {#            {% set class = 'col-sm-6' %}#}
+    {#        {% elseif column_left or column_right %}#}
+    {#            {% set class = 'col-sm-9' %}#}
+    {#        {% else %}#}
+    {#            {% set class = 'col-sm-12' %}#}
+    {#        {% endif %}#}
+    {#        <div id="content" class="{{ class }}">{{ content_top }}{{ content_bottom }}</div>#}
+    {#        {{ column_right }}</div>#}
+
+
+</div>
+{{ footer }}
