@@ -1,3 +1,88 @@
+function display_popup(product_id) {
+$('.modal-addons input:checkbox').prop('checked', false);
+
+var prod = '.prod' + product_id;
+    var image = $(prod + ' .image').html();
+    var name = $(prod + ' .name').text();
+    var desc = $(prod + ' .discription').html();
+    var options = $(prod + ' .prod-options').html();
+    
+    $('#modal_product_id').val(product_id);
+    $('.modal_img_pizza').html(image);
+    $('#openModal .name').text(name);
+    $('#openModal .discription').html(desc);
+    $('#openModal .options').html(options);
+
+    $('#openModal .options input[type="radio"]').first().trigger('click');
+    
+    $('#openModal').modal('show');
+}
+
+
+
+
+
+function updateOptionPrice() {
+    var price = 0;
+    var add = '';
+$('.modal-addons input:checkbox:checked').each(function(){
+    price += Number($(this).data('price'));
+    add += '+' + $(this).parent().find('.addons-name').text() + ' ';
+});
+
+    price += Number($('#openModal .options input[type="radio"]:checked').data('price'));
+
+
+$('.add-name').text(add);
+    $('#openModal .modal-price').text(price); 
+    $('#modal_product_price').val(price); 
+
+}
+
+
+
+function addCart() {
+
+		$.ajax({
+			url: 'index.php?route=checkout/cart/add',
+			type: 'post',
+			data: $("#openModal input[type='hidden'], #openModal input[type='checkbox']:checked, #openModal input[type='radio']:checked"),
+			dataType: 'json',
+			beforeSend: function() {
+				$('#cart > button').button('loading');
+			},
+			complete: function() {
+				$('#cart > button').button('reset');
+			},
+			success: function(json) {
+				$('.alert-dismissible, .text-danger').remove();
+
+				if (json['redirect']) {
+					location = json['redirect'];
+				}
+
+				if (json['success']) {
+                    $('#openModal').modal('hide');
+					$('#content').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+
+					// Need to set timeout otherwise it wont update the total
+					setTimeout(function () {
+						$('#cart > button').html('<span id="cart-total"><i class="fa fa-shopping-cart"></i> ' + json['total'] + '</span>');
+					}, 100);
+
+					$('html, body').animate({ scrollTop: 0 }, 'slow');
+
+					$('#cart > ul').load('index.php?route=common/cart/info ul li');
+				}
+			},
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+	}
+
+
+
 
 function getURLVar(key) {
 	var value = [];

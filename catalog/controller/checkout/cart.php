@@ -261,7 +261,7 @@ class ControllerCheckoutCart extends Controller {
 
 	public function add() {
 		$this->load->language('checkout/cart');
-
+//pr($this->request->post);
 		$json = array();
 
 		if (isset($this->request->post['product_id'])) {
@@ -295,28 +295,24 @@ class ControllerCheckoutCart extends Controller {
 				}
 			}
 
-			if (isset($this->request->post['recurring_id'])) {
-				$recurring_id = $this->request->post['recurring_id'];
+			if (isset($this->request->post['addon'])) {
+				$addon = array_filter($this->request->post['addon']);
 			} else {
-				$recurring_id = 0;
+				$addon = array();
 			}
+            
+            $addons = [];
+            foreach($addon as $product_id) {
+                $addons[] = $this->model_catalog_product->getProduct($product_id);
+            }
+            
+            
+          //  pe($addons);
+            
 
-			$recurrings = $this->model_catalog_product->getProfiles($product_info['product_id']);
-
-			if ($recurrings) {
-				$recurring_ids = array();
-
-				foreach ($recurrings as $recurring) {
-					$recurring_ids[] = $recurring['recurring_id'];
-				}
-
-				if (!in_array($recurring_id, $recurring_ids)) {
-					$json['error']['recurring'] = $this->language->get('error_recurring_required');
-				}
-			}
 
 			if (!$json) {
-				$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
+			//	$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
 
 				$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 
