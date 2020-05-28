@@ -24,39 +24,42 @@
         <div class="row catProduct">
             {% for product in category.product %}
 
-                <div class="col-sm-3 oneProduct prod{{product.product_id}}">
+                <div class="col-sm-3 oneProduct prod{{ product.product_id }}">
                     <div class="image"><img src="{{ product.full_image }}" alt="{{ product.name }}"
                                             title="{{ product.name }}" class="img-responsive"/></div>
                     <div class="name">{{ product['name'] }}</div>
                     <div class="discription">
-                        <div>{{ product.description|raw}}</div>
+                        <div>{{ product.description|raw }}</div>
                     </div>
                     <div class="price">от {{ product['price'] }}</div>
-                    
-<div class="prod-options hide">
-            {% for option in product.options %}
-            {% if option.type == 'radio' %}
-            
-            <div class="form-group">
-              <label class="control-label">{{ option.name }}</label>
-              <div id="input-option{{ option.product_option_id }}" class="btn-group" data-toggle="buttons"> {% for option_value in option.product_option_value %}
+
+                    <div class="prod-options hide">
+                        {% for option in product.options %}
+                            {% if option.type == 'radio' %}
+
+                                <div class="form-group">
+                                    <label class="control-label">{{ option.name }}</label>
+                                    <div id="input-option{{ option.product_option_id }}" class="btn-group"
+                                         data-toggle="buttons"> {% for option_value in option.product_option_value %}
 
 
-                  <label class="btn btn-default">
-                    <input type="radio" name="option[{{ option.product_option_id }}]" onchange="updateOptionPrice()" value="{{ option_value.product_option_value_id }}" data-price="{% if option_value.price %}{{ option_value.price }}{% endif %}" />
-                    {{ option_value.name }}<br>{{ option_value.price }} грн.
-</label>
+                                            <label class="btn btn-default">
+                                                <input type="radio" name="option[{{ option.product_option_id }}]"
+                                                       onchange="updateOptionPrice()"
+                                                       value="{{ option_value.product_option_value_id }}"
+                                                       data-price="{% if option_value.price %}{{ option_value.price }}{% endif %}"/>
+                                                {{ option_value.name }}<br>{{ option_value.price }} грн.
+                                            </label>
 
-                {% endfor %} </div>
-            </div>
-            {% endif %}
+                                        {% endfor %} </div>
+                                </div>
+                            {% endif %}
 
-            {% endfor %}
-</div>
-                    
-                    
-                    
-                        <div class="button" onclick="display_popup({{product.product_id}})">Выбрать</div>
+                        {% endfor %}
+                    </div>
+
+
+                    <div class="button" onclick="display_popup({{ product.product_id }})">Выбрать</div>
 
 
                 </div>
@@ -79,60 +82,140 @@
 
 </div>
 
-                    <div id="openModal" class="modal fade">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                <div class="modal-body">
-                                    <div class="modal_img_pizza"></div>
-                                    <div class="modal_block">
-                                        <div class="name"></div>
-                                        <div class="add-name"></div>
-                                        <div class="discription"></div>
-                                        <div class="options"></div>
-                                        <div class="modal-addons">
-                                        
-      {% for product in addons %}
-        <label class="btn btn-default">
-        <input type="checkbox" name="addon[{{product.product_id}}]" onchange="updateOptionPrice()" value="{{product.product_id}}" data-price="{{product.base_price}}">
-          <div class="product-thumb">
-                <div class="image"><img src="{{ product.thumb }}" alt="{{ product.name }}" title="{{ product.name }}" class="img-responsive" /></div>
-                </div>
-            <div>
-              <div class="caption">
-                <div class="addons-name">{{ product.name }}</div>
-                {% if product.price %}
-                <p class="price"> {% if not product.special %}
-                  {{ product.price }}
-                  {% else %} <span class="price-new">{{ product.special }}</span> <span class="price-old">{{ product.price }}</span> {% endif %}
-                 </p>
-                
-                {% endif %}
-                 </div>
+<div id="openModal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                        aria-hidden="true">&times;</span></button>
+            <div class="modal-body">
+                <div class="modal_img_pizza"></div>
+                <div class="modal_block">
+                    <div class="name"></div>
 
-             
-            </div>
-            </label>
+                    <div class="discription"></div> <span class="add-name"></span>
 
-        {% endfor %}
-        </div>
-                                        
-                                        
-                                        
-                                        
+                    <div class="options"></div>
+                    <div class="modal-addons">
 
-                                        <div><span class="modal-price">0</span> грн.</div>
-                                        <input type="hidden" id="modal_product_id" name="product_id" value="0">
-                                        <input type="hidden" id="modal_product_price" name="product_price" value="0">
-                                        <button onclick="addCart()">Купить</button>
-                                    </div>
+                        <div class="carousel carousel-showsixmoveone slide" id="carousel123">
+                            <div class="carousel-inner">
 
 
-                                </div>
+                                {% for product in addons %}
+                                    <label class="item
+{% if loop.first %}
+active
+{% endif %}
+">
+
+                                        <div class="product-addon">
+                                            <div class="addons-name">{{ product.name }}</div>
+                                            <div class="image-addon"><img src="{{ product.thumb }}"
+                                                                          alt="{{ product.name }}"
+                                                                          title="{{ product.name }}"
+                                                                          class="img-responsive"/></div>
+                                            <div>
+                                                <div class="caption">
+
+                                                    {% if product.price %}
+                                                        <p class="price-addon"> {% if not product.special %}
+                                                                {{ product.price }}
+                                                            {% else %} <span
+                                                                    class="price-new">{{ product.special }}</span> <span
+                                                                    class="price-old">{{ product.price }}</span> {% endif %}
+                                                        </p>
+
+                                                    {% endif %}
+                                                    <input type="checkbox" name="addon[{{ product.product_id }}]"
+                                                           onchange="updateOptionPrice()"
+                                                           value="{{ product.product_id }}"
+                                                           data-price="{{ product.base_price }}">
+                                                </div>
 
 
+                                            </div>
+                                        </div>
+                                    </label>
+                                {% endfor %}
+
+
+                            </div>
+                            <a class="left carousel-control" href="#carousel123" data-slide="prev"><i
+                                        class="glyphicon glyphicon-chevron-left"></i></a>
+                            <a class="right carousel-control" href="#carousel123" data-slide="next"><i
+                                        class="glyphicon glyphicon-chevron-right"></i></a>
                         </div>
 
+                        <script>(function () {
+                                // setup your carousels as you normally would using JS
+                                // or via data attributes according to the documentation
+                                // https://getbootstrap.com/javascript/#carousel
+                                // $('#carousel123').carousel({interval: 2000});
+                                // $('#carouselABC').carousel({interval: 3600});
+                            }());
+
+                            (function () {
+                                $('.carousel-showsixmoveone .item').each(function () {
+                                    var itemToClone = $(this);
+
+                                    for (var i = 1; i < 3; i++) {
+                                        itemToClone = itemToClone.next();
+
+                                        // wrap around if at end of item collection
+                                        if (!itemToClone.length) {
+                                            itemToClone = $(this).siblings(':first');
+                                        }
+
+                                        // grab item, clone, add marker class, add to collection
+                                        itemToClone.children(':first-child').clone()
+                                            .addClass("cloneditem-" + (i))
+                                            .appendTo($(this));
+                                    }
+                                });
+                            }());</script>
+
+
+
+{#                    {% for product in addons %}#}
+{#                        <label class="btn btn-default item">#}
+{#                            <input type="checkbox" name="addon[{{ product.product_id }}]" onchange="updateOptionPrice()"#}
+{#                                   value="{{ product.product_id }}" data-price="{{ product.base_price }}">#}
+{#                            <div class="product-thumb">#}
+{#                                <div class="image"><img src="{{ product.thumb }}" alt="{{ product.name }}"#}
+{#                                                        title="{{ product.name }}" class="img-responsive"/></div>#}
+{#                            </div>#}
+{#                            <div>#}
+{#                                <div class="caption">#}
+{#                                    <div class="addons-name">{{ product.name }}</div>#}
+{#                                    {% if product.price %}#}
+{#                                        <p class="price"> {% if not product.special %}#}
+{#                                                {{ product.price }}#}
+{#                                            {% else %} <span class="price-new">{{ product.special }}</span> <span#}
+{#                                                    class="price-old">{{ product.price }}</span> {% endif %}#}
+{#                                        </p>#}
+{#                                        #}{##}
+{#                                    {% endif %}#}
+{#                                </div>#}
+{#                                #}{##}
+{#                                #}{##}
+{#                            </div>#}
+{#                        </label>#}
+{#                        #}{##}
+{#                    {% endfor %}#}
                     </div>
+                    <div class="pricing">
+                        <div  class="modal-price" ><span>0</span> грн.</div>
+                        <input type="hidden" id="modal_product_id" name="product_id" value="0">
+                        <input type="hidden" id="modal_product_price" name="product_price" value="0">
+                        <button class="modal-button" onclick="addCart()">Купить</button>
                     </div>
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+</div>
 {{ footer }}
