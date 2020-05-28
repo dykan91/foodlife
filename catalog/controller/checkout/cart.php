@@ -56,8 +56,8 @@ class ControllerCheckoutCart extends Controller {
 			$data['products'] = array();
 
 			$products = $this->cart->getProducts();
-
-			foreach ($products as $product) {
+          
+          foreach ($products as $product) {
 				$product_total = 0;
 
 				foreach ($products as $product_2) {
@@ -130,10 +130,17 @@ class ControllerCheckoutCart extends Controller {
 					}
 				}
 
+                $add_title = [];
+                foreach($product['addons'] as $addon) {
+                    $add_title[] = $addon['name'];
+                }
+                
+                
 				$data['products'][] = array(
 					'cart_id'   => $product['cart_id'],
 					'thumb'     => $image,
 					'name'      => $product['name'],
+                    'add_name' => implode(', ', $add_title),
 					'model'     => $product['model'],
 					'option'    => $option_data,
 					'recurring' => $recurring,
@@ -213,6 +220,7 @@ class ControllerCheckoutCart extends Controller {
 				);
 			}
 
+            $data['total'] = end($data['totals']);
 			$data['continue'] = $this->url->link('common/home');
 
 			$data['checkout'] = $this->url->link('checkout/checkout', '', true);
@@ -261,6 +269,8 @@ class ControllerCheckoutCart extends Controller {
 
 	public function add() {
 		$this->load->language('checkout/cart');
+        $this->load->model('catalog/getProduct');
+
 //pr($this->request->post);
 		$json = array();
 
@@ -301,18 +311,23 @@ class ControllerCheckoutCart extends Controller {
 				$addon = array();
 			}
             
+            
+            $addons = array_values($addon);
+            
+
+            /*
             $addons = [];
             foreach($addon as $product_id) {
                 $addons[] = $this->model_catalog_product->getProduct($product_id);
             }
-            
+            */
             
           //  pe($addons);
             
 
 
 			if (!$json) {
-			//	$this->cart->add($this->request->post['product_id'], $quantity, $option, $recurring_id);
+                    $this->model_catalog_getProduct->addCart($this->request->post['product_id'], $quantity, $option, $addons);
 
 				$json['success'] = sprintf($this->language->get('text_success'), $this->url->link('product/product', 'product_id=' . $this->request->post['product_id']), $product_info['name'], $this->url->link('checkout/cart'));
 
