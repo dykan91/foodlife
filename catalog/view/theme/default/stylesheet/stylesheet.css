@@ -925,13 +925,25 @@ display: none;
 	padding: 0;
 }
 #contact .button{
-width: 30%;
+	width: 30%;
 	height: 100%;
 	background: #7BE0BC;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+#contact .button i {
+font-size: 19px;
+	color: #187956;
 }
 #contact .button:hover{
 	background:  #4BAD8A;
+
 }
+#contact .button:hover i{
+	color: #7BE0BC;
+}
+
 #cartNew{
 	display: flex;
 	justify-content: space-around;
@@ -969,9 +981,7 @@ width: 30%;
 	align-items: center;
 	flex-wrap: wrap;
 }
-.contactLink a{
-width: 51%;
-}
+
 .social{
 	height: 80px;
 	display: flex;
@@ -1417,4 +1427,143 @@ text-align: center;
 .pricing{
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
+}
+.cart-product{
+	padding-top: 14px;
+	padding-bottom: 14px;
+	justify-content: space-between;
+	align-items: center;
+	display: flex;
+	border-top: 1px solid #E9E9E9;
+	border-bottom: 1px solid #E9E9E9;
+}
+.cart-product-img{
+	width: 15%;
+	min-width: 155px;
+
+}
+.cart-product-img img{
+	border: none;
+	width: 110px;
+}
+.cart-product-discription{
+	width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+.cart-product-text{
+	font-style: normal;
+	font-weight: normal;
+	font-size: 16px;
+	line-height: 22px;
+	color: #000000;
+}
+.cart-product-title{
+	margin-bottom: 10px;
+	font-style: normal;
+	font-weight: 800;
+	font-size: 24px;
+	line-height: 33px;
+	color: #000000;
+	width: 100%;
+}
+.cart-product-count{
+	width: 15%;
+	min-width: 175px;
+	font-style: normal;
+	font-weight: bold;
+	font-size: 16px;
+	line-height: 22px;
+	color: #000000;
+	display: flex;
+justify-content: center;
+	align-items: center;
+}
+.count-quantity{
+	margin: 0 10px;
+}
+.cart-product-price{
+	width: 15%;
+	min-width: 175px;
+	font-style: normal;
+	font-weight: 800;
+	font-size: 24px;
+	line-height: 33px;
+	color: #000000;
+	text-align: center;
+}
+.cart-product-delete{
+	width: 5%;
+	min-width: 87px;
+	display: flex;
+	justify-content: flex-end;
+}
+.countbtn{
+	background: #66CFA9;
+	border: none;
+	border-radius: 50%;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.countbtn:hover {
+	background: #4BAD8A;
+}
+.deletebtn{
+	border: none;
+background:none;
+
+}
+.deletebtn i{
+	color:#66CFA9;
+	font-size: 24px;
+}
+.countbtn i{
+	color: white;
+}
+.deletebtn:hover i {
+	color: #4BAD8A;
+}
+.orderbtn{
+	background: #66CFA9;
+	border-radius: 32px;
+	font-style: normal;
+	font-weight: bold;
+	font-size: 18px;
+	line-height: 25px;
+	color: #FFFFFF;
+	padding: 10px 20px;
+	margin-left: 37px;
+}
+.orderbtn:hover{
+	background: #4BAD8A;
+	color: #FFFFFF;
+
+}
+.result-price{
+	font-style: normal;
+	font-weight: 800;
+	font-size: 24px;
+	line-height: 33px;
+	color: #000000;
+}
+.result{
+	margin-top: 55px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+}
+.title-cart{
+
+	font-style: normal;
+	font-weight: 800;
+	font-size: 34px;
+	line-height: 46px;
+	color: #000000;
+	margin-bottom: 45px;
+
 }
