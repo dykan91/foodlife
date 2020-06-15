@@ -1757,3 +1757,5 @@
 2020-02-24 21:30:40 - PHP Warning:  Cannot modify header information - headers already sent by (output started at W:\domains\dev.ua\admin\controller\startup\error.php:34) in W:\domains\dev.ua\system\library\response.php on line 36
 2020-03-13 20:03:45 - PHP Warning:  unlink(W:/domains/dev.ua/storage/cache/cache.catalog.language.1584133425): Permission denied in W:\domains\dev.ua\system\library\cache\file.php on line 68
 2020-03-13 20:39:08 - PHP Notice:  Undefined variable: cat_id in W:\domains\dev.ua\catalog\controller\common\home.php on line 5
+2020-06-01 14:41:48 - PHP Warning:  unlink(W:/domains/dev.ua/storage/cache/cache.catalog.language.1591026102): Permission denied in W:\domains\dev.ua\system\library\cache\file.php on line 68
+2020-06-02 21:40:49 - PHP Notice:  Undefined variable: addon in W:\domains\dev.ua\catalog\model\catalog\getProduct.php on line 185

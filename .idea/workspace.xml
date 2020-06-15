@@ -12,6 +12,9 @@
       <executable />
     </execution>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="ProjectId" id="1YGldcECAiDIMRDrIumOhCZDs3X" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -55,6 +58,7 @@
       <workItem from="1584044877730" duration="2116000" />
       <workItem from="1584112497013" duration="10582000" />
       <workItem from="1584204320163" duration="17488000" />
+      <workItem from="1591088061837" duration="16081000" />
     </task>
     <servers />
   </component>
@@ -74,6 +78,11 @@
           <url>file://$PROJECT_DIR$/catalog/view/theme/default/template/product/category.twig</url>
           <line>1</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="php">
+          <url>file://$PROJECT_DIR$/catalog/view/theme/default/template/checkout/cart.twig</url>
+          <line>77</line>
+          <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
