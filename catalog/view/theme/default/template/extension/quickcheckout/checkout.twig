@@ -45,7 +45,6 @@
 					<div class="qc-step" data-col="{{ step['login']['column'] }}" data-row="{{ step['login']['row'] }}">
 					  <div id="login-box">
 						<div id="checkout">
-						  <div class="quickcheckout-heading"><i class="fa fa-sign-in"></i> {{ text_checkout_option }}</div>
 						  <div class="quickcheckout-content">{{ login }}</div>
 						</div>
 						<div class="or">{{ text_or }}</div>
@@ -55,7 +54,6 @@
 				
 				<div class="qc-step" data-col="{{ step['payment_address']['column'] }}" data-row="{{ step['payment_address']['row'] }}">
 					<div id="payment-address">
-					  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ not logged ? text_checkout_account : text_checkout_payment_address }}</div>
 					  <div class="quickcheckout-content">{{ guest ? guest : payment_address }}</div>
 					</div>
 				</div>
@@ -63,7 +61,6 @@
 				{% if shipping_required %} 
 				<div class="qc-step {% if not show_shipping_address %}{{ 'hidden' }}{% endif %}" data-col="{{ step['shipping_address']['column'] }}" data-row="{{ step['shipping_address']['row'] }}">
 					<div id="shipping-address">
-					  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ text_checkout_shipping_address }}</div>
 					  <div class="quickcheckout-content">{{ shipping_address ? shipping_address }}</div>
 					</div>
 				</div>
@@ -72,7 +69,6 @@
 				{% if shipping_required %} 
 				<div class="qc-step {% if not shipping_module %}{{ 'hidden' }}{% endif %}" data-col="{{ step['shipping_method']['column'] }}" data-row="{{ step['shipping_method']['row'] }}">
 					<div id="shipping-method">
-					  <div class="quickcheckout-heading"><i class="fa fa-truck"></i> {{ text_checkout_shipping_method }}</div>
 					  <div class="quickcheckout-content"></div>
 					</div>
 				</div>
@@ -80,7 +76,6 @@
 
 				<div class="qc-step {% if not payment_module %}{{ 'hidden' }}{% endif %}" data-col="{{ step['payment_method']['column'] }}" data-row="{{ step['payment_method']['row'] }}">
 					<div id="payment-method">
-					  <div class="quickcheckout-heading"><i class="fa fa-credit-card"></i> {{ text_checkout_payment_method }}</div>
 					  <div class="quickcheckout-content"></div>
 					</div>
 				</div>
@@ -137,7 +132,6 @@
 			  {% if not logged and login_module %} 
 			  <div class="quickcheckoutmid" id="login-box">
 				<div id="checkout">
-				  <div class="quickcheckout-heading"><i class="fa fa-sign-in"></i> {{ text_checkout_option }}</div>
 				  <div class="quickcheckout-content">{{ login }}</div>
 				</div>
 				<div class="or">{{ text_or }}</div>
@@ -145,12 +139,10 @@
 			  {% endif %} 
 			  <div class="quickcheckoutleft">
 				<div id="payment-address">
-				  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ not logged ? text_checkout_account : text_checkout_payment_address }}</div>
 				  <div class="quickcheckout-content">{{ guest ? guest : payment_address }}</div>
 				</div>
 				{% if shipping_required %} 
 				<div id="shipping-address" {% if not show_shipping_address %}{{ 'class="hidden"' }}{% endif %}>
-				  <div class="quickcheckout-heading"><i class="fa fa-user"></i> {{ text_checkout_shipping_address }}</div>
 				  <div class="quickcheckout-content">{{ shipping_address ? shipping_address }}</div>
 				</div>
 				{% endif %} 
@@ -158,12 +150,10 @@
 			  <div class="quickcheckoutright">
 				{% if shipping_required %} 
 				<div id="shipping-method" {% if not shipping_module %}{{ 'class="hidden"' }}{% endif %}>
-				  <div class="quickcheckout-heading"><i class="fa fa-truck"></i> {{ text_checkout_shipping_method }}</div>
 				  <div class="quickcheckout-content"></div>
 				</div>
 				{% endif %}
 				<div id="payment-method" {% if not payment_module %}{{ 'class="hidden"' }}{% endif %}>
-				  <div class="quickcheckout-heading"><i class="fa fa-credit-card"></i> {{ text_checkout_payment_method }}</div>
 				  <div class="quickcheckout-content"></div>
 				</div>
 			  </div>

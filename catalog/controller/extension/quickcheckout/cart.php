@@ -149,9 +149,16 @@ class ControllerExtensionQuickCheckoutCart extends Controller {
 				}
 			}
 
+                $add_title = [];
+                foreach($product['addons'] as $addon) {
+                    $add_title[] = $addon['name'];
+                }
+            
+            
 			$data['products'][] = array(
 				'key'        => isset($product['key']) ? $product['key'] : $product['cart_id'],
 				'thumb'     => $image,
+                    'add_name' => implode(', ', $add_title),
 				'name'      => $product['name'],
 				'model'     => $product['model'],
 				'option'    => $option_data,

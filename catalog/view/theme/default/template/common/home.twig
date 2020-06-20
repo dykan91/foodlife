@@ -58,9 +58,11 @@
                         {% endfor %}
                     </div>
 
-
+                    {% if product.popup %}
                     <div class="button" onclick="display_popup({{ product.product_id }})">Выбрать</div>
-
+                    {% else %}
+                    <div class="button" onclick="to_cart({{ product.product_id }})">Выбрать</div>
+                    {% endif %}
 
                 </div>
 
@@ -102,13 +104,14 @@
 
 
                                 {% for product in addons %}
-                                    <label class="item
-{% if loop.first %}
+                                        <div class="item {% if loop.first %}
 active
-{% endif %}
+{% endif %}">
+                                    <label class="
+
 ">
 
-                                        <div class="product-addon">
+<div class="product-addon">
                                             <div class="addons-name">{{ product.name }}</div>
                                             <div class="image-addon"><img src="{{ product.thumb }}"
                                                                           alt="{{ product.name }}"
@@ -126,7 +129,7 @@ active
                                                         </p>
 
                                                     {% endif %}
-                                                    <input type="checkbox" name="addon[{{ product.product_id }}]"
+                                                    <input type="checkbox" class="product_option_checkbox" name="addon[{{ product.product_id }}]"
                                                            onchange="updateOptionPrice()"
                                                            value="{{ product.product_id }}"
                                                            data-price="{{ product.base_price }}">
@@ -136,13 +139,14 @@ active
                                             </div>
                                         </div>
                                     </label>
+</div>
                                 {% endfor %}
 
 
                             </div>
-                            <a class="left carousel-control" href="#carousel123" data-slide="prev"><i
+                            <a class="left carousel-control" href="#carousel123" role="button" data-slide="prev"><i
                                         class="glyphicon glyphicon-chevron-left"></i></a>
-                            <a class="right carousel-control" href="#carousel123" data-slide="next"><i
+                            <a class="right carousel-control" href="#carousel123" role="button" data-slide="next"><i
                                         class="glyphicon glyphicon-chevron-right"></i></a>
                         </div>
 

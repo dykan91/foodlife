@@ -27,14 +27,15 @@ function updateOptionPrice() {
     var add = '';
 $('.modal-addons input:checkbox:checked').each(function(){
     price += Number($(this).data('price'));
-    add += '+' + $(this).parent().find('.addons-name').text() + ' ';
+    add += '+' + $(this).parent().parent().parent().find('.addons-name').text() + ' ';
+    $(this).parent().parent().parent('.product-addon').addClass('check');
 });
 
     price += Number($('#openModal .options input[type="radio"]:checked').data('price'));
 
 
 $('.add-name').text(add);
-    $('#openModal .modal-price').text(price); 
+    $('#openModal .modal-price span').text(price); 
     $('#modal_product_price').val(price); 
 
 }
@@ -55,6 +56,17 @@ function addCart() {
 				$('#cart > button').button('reset');
 			},
 			success: function(json) {
+                cart_success(json);
+            },
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+	}
+
+
+    
+    function cart_success(json) {
 				$('.alert-dismissible, .text-danger').remove();
 
 				if (json['redirect']) {
@@ -63,26 +75,40 @@ function addCart() {
 
 				if (json['success']) {
                     $('#openModal').modal('hide');
-					$('#content').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('#common-home').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 
 					// Need to set timeout otherwise it wont update the total
 					setTimeout(function () {
-						$('#cart > button').html('<span id="cart-total"><i class="fa fa-shopping-cart"></i> ' + json['total'] + '</span>');
+						$('#cartNew .cart-total').text(json['total']);
 					}, 100);
 
 					$('html, body').animate({ scrollTop: 0 }, 'slow');
 
-					$('#cart > ul').load('index.php?route=common/cart/info ul li');
-				}
+					//$('#cart > ul').load('index.php?route=common/cart/info ul li');
+				}    
+    }
+    
+function to_cart(product_id) {
+
+		$.ajax({
+			url: 'index.php?route=checkout/cart/add',
+			type: 'post',
+			data: {product_id:product_id},
+			dataType: 'json',
+			beforeSend: function() {
+				$('#cart > button').button('loading');
 			},
+			complete: function() {
+				$('#cart > button').button('reset');
+			},
+			success: function(json) {
+                cart_success(json);
+            },
 			error: function(xhr, ajaxOptions, thrownError) {
 				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
 			}
 		});
 	}
-
-
-
 
 function getURLVar(key) {
 	var value = [];

@@ -1,5 +1,8 @@
 <?php
 class ControllerCommonHome extends Controller {
+
+    private $popup_category = [60]; // список категорий, в которых есть попап продукта
+
 	public function index() {
 		$this->load->model('tool/image');
         $this->load->model('catalog/getProduct');
@@ -12,18 +15,22 @@ class ControllerCommonHome extends Controller {
             $prod['full_image'] = $this->model_tool_image->resize($prod['image'], 300, 300);
             $prod['description'] = htmlspecialchars_decode($prod['description']);
             $prod['options'] = $this->model_catalog_getProduct->getOptions($prod['product_id']);
+            $prod['popup'] = in_array($prod['category_id'], $this->popup_category) ? true : false;
             
             $ret[$prod['category_name']][] = $prod;
         }
 
         $res = [];
 
+
+        
         foreach($ret as $cat => $prods) {
             $res[] = [
                 'name' => $cat,
                 'product' => $prods
             ];
         }
+
         
         $data['products_all'] = $res;
 

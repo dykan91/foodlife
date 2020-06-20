@@ -147,6 +147,13 @@ $_['entry_field_customer_group']			= 'Группа клиентов';
 $_['entry_field_address_1']    				= 'Адрес 1';
 $_['entry_field_address_2']    				= 'Адрес 2';
 $_['entry_field_city']    					= 'Город';
+
+$_['entry_field_street']    					= 'Улица';
+$_['entry_field_building']    					= 'Дом';
+$_['entry_field_door']    					= 'Подъезд';
+$_['entry_field_door_code']    					= 'Код двери';
+$_['entry_field_floor']    					= 'Этаж';
+
 $_['entry_field_postcode']    				= 'Индекс';
 $_['entry_field_country']     				= 'Страна';
 $_['entry_field_zone']     					= 'Регион';

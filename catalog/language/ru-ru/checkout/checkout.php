@@ -60,6 +60,12 @@ $_['entry_company']                  = 'Компания';
 $_['entry_customer_group']           = 'Тип бизнеса';
 $_['entry_address_1']                = 'Адрес';
 $_['entry_address_2']                = 'Адрес 2';
+$_['entry_street']    					= 'Улица';
+$_['entry_building']    					= 'Дом';
+$_['entry_door']    					= 'Подъезд';
+$_['entry_door_code']    					= 'Код двери';
+$_['entry_floor']    					= 'Этаж';
+
 $_['entry_postcode']                 = 'Индекс';
 $_['entry_city']                     = 'Город';
 $_['entry_country']                  = 'Страна';

@@ -1,7 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200;0,300;0,400;0,600;0,700;0,800;0,900;1,200;1,300;1,400;1,600;1,700;1,800;1,900&display=swap');
 
 
-
 body {
 	font-family: 'Nunito', sans-serif;
 	/*font-family: 'Open Sans', sans-serif;*/
@@ -1131,10 +1130,15 @@ margin-top: 20px;
 	font-weight: bold;
 	font-size: 18px;
 	line-height: 25px;
-
+    cursor:pointer;
 
 	color: #FFFFFF;
 }
+
+.product_option_checkbox {
+    display: none;
+}
+
 .modal1 {
 	position: fixed;
 	/* фиксированное положение */
@@ -1325,11 +1329,17 @@ width: 100%;
 	width: 85px;
 	height: 105px;
 	background: #FFFFFF;
-	box-shadow: 0px 13px 18px rgba(0, 0, 0, 0.12);
+	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.12);
 	border-radius: 8px;
 	padding: 7px;
 
 }
+
+.product-addon.check {
+    border: 1px solid #66CFA9;
+    box-shadow: 0px 2px 5px rgba(102, 207, 169, 0.9);
+}
+
 .modal_img_pizza img{
 	max-width: 240px;
 }

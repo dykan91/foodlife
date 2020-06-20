@@ -1,66 +1,76 @@
-{% for field in fields %} 
-  {% if field == 'country' %}
-    {% if attribute(_context, 'field_' ~ field).display %}  
-	<div class="col-sm-6{{ attribute(_context, 'field_' ~ field).required ? ' required' }}">
-	  <label class="control-label">{{ entry_country }}</label>
-	  <select name="country_id" class="form-control" id="input-payment-country">
-	  {% for country in countries %} 
-		{% if country.country_id == country_id %} 
-		<option value="{{ country.country_id }}" selected="selected">{{ country.name }}</option>
-		{% else %}   
-		<option value="{{ country.country_id }}">{{ country.name }}</option>
-		{% endif %}
-	  {% endfor %}
-	  </select>
+
+	<div class="col-sm-6 required">
+	  <label class="control-label" for="input-payment-firstname">Имя</label>
+	  <input type="text" name="firstname" placeholder="" value="" class="form-control style-field-firstname"  id="input-payment-firstname" />
 	</div>
-	{% else %}   
-	<select name="country_id" class="hide">
-	{% for country in countries %} 
-	  {% if country.country_id == country_id %} 
-	  <option value="{{ country.country_id }}" selected="selected">{{ country.name }}</option>
-	  {% else %}   
-	  <option value="{{ country.country_id }}">{{ country.name }}</option>
-	  {% endif %}
-	{% endfor %}
-	</select>
-	{% endif %}
-  {% elseif  field == 'zone' %} 
-    {% if attribute(_context, 'field_' ~ field).display %}  
-	<div class="col-sm-6{{ attribute(_context, 'field_' ~ field).required ? ' required' }}">
-	  <label class="control-label">{{ entry_zone }}</label>
-	  <select name="zone_id" class="form-control" id="input-payment-zone"></select>
+	<input type="text" name="lastname" value="" class="hide" />
+	<input type="text" name="email" value="" class="hide" />
+	<div class="col-sm-6 required">
+	  <label class="control-label" for="input-payment-telephone">Телефон</label>
+	  <input type="text" name="telephone" placeholder="" value="" class="form-control style-field-telephone"  id="input-payment-telephone" />
 	</div>
-	{% else %}   
-	  <select name="zone_id" class="hide"></select>
-	{% endif %} 
-  {% elseif field == 'customer_group' %} 
-    {% if attribute(_context, 'field_' ~ field).display %}  
-	<div class="col-sm-6 required"{{ customer_groups|length <= 1 ? ' style="display:none !important"' }}>
-	  <label class="control-label">{{ entry_customer_group }}</label>
-	  <select name="customer_group_id" class="form-control" id="input-payment-customer-group">
-		{% for customer_group in customer_groups %} 
-		<option value="{{ customer_group.customer_group_id }}"{{ customer_group.customer_group_id == customer_group_id ? ' selected="selected"' }}>{{ customer_group.name }}</option>
-		{% endfor %} 
-	  </select>
-	</div>
-	{% else %}   
+	   
+     
+       
+	<input type="text" name="company" value="" class="hide" />
 	  <select name="customer_group_id" class="hide">
-		{% for customer_group in customer_groups %} 
-		<option value="{{ customer_group.customer_group_id }}"{{ customer_group.customer_group_id == customer_group_id ? ' selected="selected"' }}>{{ customer_group.name }}</option>
-		{% endfor %} 
+		<option value="1" selected="selected">Default</option>
 	  </select>
-	{% endif %}
-  {% else %}   
-    {% if attribute(_context, 'field_' ~ field).display %}  
-	<div{{ field == 'postcode' ? ' id="payment-postcode-required"' }} class="col-sm-6{{attribute(_context, 'field_' ~ field).required ? ' required' }}">
-	  <label class="control-label" for="input-payment-{{ field|replace({'_' : '-'}) }}">{{ attribute(_context, 'entry_' ~ field) }}</label>
-	  <input type="text" name="{{ field }}" placeholder="{{ attribute(_context, 'field_' ~ field).placeholder }}" value="{{ attribute(_context, field) ? attribute(_context, field) : attribute(_context, 'field_' ~ field).default }}" class="form-control"  id="input-payment-{{ field|replace({'_' : '-'}) }}" />
+	   
+     
+<h2>Адрес</h2>  
+<div class="col-sm-6">    
+	<input type="text" name="address_1" value="" class="hide" />
+	   
+     
+	<input type="text" name="address_2" value="" class="hide" />       
+
+	<input type="text" name="city" value="" class="hide" />
+     
+       
+	<input type="text" name="postcode" value="" class="hide" />
+	   
+	  <select name="zone_id" class="hide"></select>
+      
+	<select name="country_id" class="hide">
+	  <option value="220" selected="selected">Ukraine</option>
+	  		</select>
+	   
+
+	<div class="col-md-4">
+	  <label class="control-label" for="input-payment-street">Улица</label>
+	  <input type="text" name="street" placeholder="" value="" class="form-control style-field-street"  id="input-payment-street" />
 	</div>
-	{% else %}   
-	<input type="text" name="{{ field }}" value="{{ attribute(_context, field) ? attribute(_context, field) : attribute(_context, 'field_' ~ field).default }}" class="hide" />
-	{% endif %}
-  {% endif %}
-{% endfor %}
+	   
+     
+      
+	<div class="col-md-2">
+	  <label class="control-label" for="input-payment-building">Дом</label>
+	  <input type="text" name="building" placeholder="" value="" class="form-control style-field-building"  id="input-payment-building" />
+	</div>
+	   
+   
+      
+	<div class="col-md-2">
+	  <label class="control-label" for="input-payment-door">Подъезд</label>
+	  <input type="text" name="door" placeholder="" value="" class="form-control style-field-door"  id="input-payment-door" />
+	</div>
+	   
+     
+      
+	<div class="col-md-2">
+	  <label class="control-label" for="input-payment-door-code">Код двери</label>
+	  <input type="text" name="door_code" placeholder="" value="" class="form-control style-field-door_code"  id="input-payment-door-code" />
+	</div>
+	   
+   
+
+      
+	<div class="col-md-2">
+	  <label class="control-label" for="input-payment-floor">Этаж</label>
+	  <input type="text" name="floor" placeholder="" value="" class="form-control style-field-floor"  id="input-payment-floor" />
+	</div>
+    </div>
 <!-- CUSTOM FIELDS -->
 <div id="custom-field-payment">
   {% for custom_field in custom_fields %} 

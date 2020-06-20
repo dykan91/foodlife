@@ -182,7 +182,7 @@ SELECT oc_product.*, oc_product_description.*, oc_category.category_id, oc_categ
                     . " AND session_id = '" . $this->db->escape($this->session->getId()) . "'"
                     . " AND product_id = '" . (int) $product_id . "'"
                     . " AND `option` = '" . $this->db->escape(json_encode($option)) . "'"
-                    . " AND `addon` = '" . $this->db->escape(json_encode($addon)) . "'";
+                    . " AND `addon` = '" . $this->db->escape(json_encode($addons)) . "'";
             $this->db->query($sql);
         }
     }
