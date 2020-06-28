@@ -1,4 +1,4 @@
-function display_popup(product_id) {
+function display_popup(product_id, addons) {
 $('.modal-addons input:checkbox').prop('checked', false);
 
 var prod = '.prod' + product_id;
@@ -14,6 +14,13 @@ var prod = '.prod' + product_id;
     $('#openModal .options').html(options);
 
     $('#openModal .options input[type="radio"]').first().trigger('click');
+    if (addons) {
+        $('.modal-addons').show();
+    } else {
+       $('.modal-addons').hide();
+    }
+    
+    
     
     $('#openModal').modal('show');
 }
@@ -75,14 +82,14 @@ function addCart() {
 
 				if (json['success']) {
                     $('#openModal').modal('hide');
-					$('#common-home').parent().before('<div class="alert alert-success alert-dismissible"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+					$('#common-home').parent().before('<div class="alert alert-success alert-dismissible alert-tocart"><i class="fa fa-check-circle"></i> ' + json['success'] + ' <button type="button" class="close" data-dismiss="alert">&times;</button></div>');
 
 					// Need to set timeout otherwise it wont update the total
 					setTimeout(function () {
 						$('#cartNew .cart-total').text(json['total']);
 					}, 100);
 
-					$('html, body').animate({ scrollTop: 0 }, 'slow');
+				//	$('html, body').animate({ scrollTop: 0 }, 'slow');
 
 					//$('#cart > ul').load('index.php?route=common/cart/info ul li');
 				}    
@@ -110,6 +117,32 @@ function to_cart(product_id) {
 		});
 	}
 
+    
+    
+function editCount(product_id, count) {
+
+		$.ajax({
+			url: 'index.php?route=checkout/cart/editCount',
+			type: 'post',
+			data: [{product_id:product_id},{count:count}],
+			dataType: 'json',
+			beforeSend: function() {
+                $('.cart-product-count .countbtn').attr('disabled', 'disabled');
+			},
+			complete: function() {
+				    $('.cart-product-count .countbtn').attr('disabled', '');
+			},
+			success: function(json) {
+                cart_success(json);
+            },
+			error: function(xhr, ajaxOptions, thrownError) {
+				alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+			}
+		});
+}    
+    
+    
+    
 function getURLVar(key) {
 	var value = [];
 

@@ -1577,3 +1577,14 @@ background:none;
 	margin-bottom: 45px;
 
 }
+
+.alert-tocart {
+    position:fixed;
+    top:0;
+    width: 100%;
+    z-index: 10000;
+}
+
+.alert-tocart .close {
+    right: 0px;
+}

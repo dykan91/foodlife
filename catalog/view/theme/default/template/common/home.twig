@@ -57,11 +57,11 @@
 
                         {% endfor %}
                     </div>
-
+                    
                     {% if product.popup %}
-                    <div class="button" onclick="display_popup({{ product.product_id }})">Выбрать</div>
+                    <div class="button" onclick="display_popup({{ product.product_id }}, {{product.addons}})">Выбрать</div>
                     {% else %}
-                    <div class="button" onclick="to_cart({{ product.product_id }})">Выбрать</div>
+                    <div class="button" onclick="to_cart({{ product.product_id }})">Купить</div>
                     {% endif %}
 
                 </div>

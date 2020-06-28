@@ -136,6 +136,15 @@ class ControllerCheckoutCart extends Controller {
                 }
                 
                 
+                $minus = $product['quantity'] - 1;
+                
+                if ($minus <0 ) {
+                    $minus = 0;
+                }
+                
+                $plus = $product['quantity'] + 1;
+                
+                
 				$data['products'][] = array(
 					'cart_id'   => $product['cart_id'],
 					'thumb'     => $image,
@@ -149,6 +158,8 @@ class ControllerCheckoutCart extends Controller {
 					'reward'    => ($product['reward'] ? sprintf($this->language->get('text_points'), $product['reward']) : ''),
 					'price'     => $price,
 					'total'     => $total,
+                    'minus' => $minus,
+                    'plus' => $plus,
 					'href'      => $this->url->link('product/product', 'product_id=' . $product['product_id'])
 				);
 			}
@@ -395,12 +406,12 @@ class ControllerCheckoutCart extends Controller {
 		$this->load->language('checkout/cart');
 
 		$json = array();
-
+        
 		// Update
 		if (!empty($this->request->post['quantity'])) {
-			foreach ($this->request->post['quantity'] as $key => $value) {
-				$this->cart->update($key, $value);
-			}
+		//	foreach ($this->request->post['quantity'] as $key => $value) {
+				$this->cart->update($this->request->post['key'], $this->request->post['quantity']);
+		//	}
 
 			$this->session->data['success'] = $this->language->get('text_remove');
 
@@ -410,7 +421,7 @@ class ControllerCheckoutCart extends Controller {
 			unset($this->session->data['payment_methods']);
 			unset($this->session->data['reward']);
 
-			$this->response->redirect($this->url->link('checkout/cart'));
+		//	$this->response->redirect($this->url->link('checkout/cart'));
 		}
 
 		$this->response->addHeader('Content-Type: application/json');

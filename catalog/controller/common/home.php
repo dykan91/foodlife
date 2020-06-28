@@ -15,8 +15,9 @@ class ControllerCommonHome extends Controller {
             $prod['full_image'] = $this->model_tool_image->resize($prod['image'], 300, 300);
             $prod['description'] = htmlspecialchars_decode($prod['description']);
             $prod['options'] = $this->model_catalog_getProduct->getOptions($prod['product_id']);
-            $prod['popup'] = in_array($prod['category_id'], $this->popup_category) ? true : false;
-            
+            //$prod['popup'] = in_array($prod['category_id'], $this->popup_category) ? true : false;
+            $prod['addons'] = in_array($prod['category_id'], $this->popup_category) ? true : false;
+            $prod['popup'] = $prod['options'] ? true : false;
             $ret[$prod['category_name']][] = $prod;
         }
 

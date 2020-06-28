@@ -57,11 +57,11 @@
                             </div>
                         </div>
                         <div class="cart-product-count">
-                            <button type="submit" data-toggle="tooltip" title="{{ button_update }}" class="countbtn"><i class="fa fa-minus"></i></button>
+                            <button type="button" data-toggle="tooltip" title="{{ button_update }}" class="countbtn" onClick="cart.update({{product.cart_id}}, {{product.minus}})"><i class="fa fa-minus"></i></button>
                             <div class="count-quantity">
                                 {{ product.quantity }}
                             </div>
-                            <button type="submit" data-toggle="tooltip" title="{{ button_update }}" class="countbtn"><i class="fa fa-plus"></i></button>
+                            <button type="button" data-toggle="tooltip" title="{{ button_update }}" class="countbtn"onClick="cart.update({{product.cart_id}}, {{product.plus}})"><i class="fa fa-plus"></i></button>
                         </div>
                         <div class="cart-product-price">
                             {{ product.total }}
